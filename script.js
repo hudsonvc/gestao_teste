@@ -1145,10 +1145,10 @@ async function salvarAgendaFirebase() {
 
     try {
         if (idAgendaEdicao) {
-            await firestoreService.updateDocument(COLECOES.AGENDA_GERAL || "agenda_geral", idAgendaEdicao, dados);
+            await db.collection(COLECOES.AGENDA_GERAL || "agenda_geral").doc(idAgendaEdicao).update(dados);
             mostrarNotificacaoSucesso("Agenda updated com sucesso!");
         } else {
-            await firestoreService.addDocument(COLECOES.AGENDA_GERAL || "agenda_geral", dados);
+            await db.collection(COLECOES.AGENDA_GERAL || "agenda_geral").add(dados);
             mostrarNotificacaoSucesso("Novo compromisso cadastrado!");
         }
         fecharModalCadastro();
@@ -1163,7 +1163,7 @@ async function excluirAgendaFirebase() {
         "Deseja mesmo excluir este compromisso permanentemente do sistema?",
         async () => {
             try {
-                await firestoreService.deleteDocument(COLECOES.AGENDA_GERAL || "agenda_geral", idAgendaEdicao);
+                await db.collection(COLECOES.AGENDA_GERAL || "agenda_geral").doc(idAgendaEdicao).delete();
                 mostrarNotificacaoSucesso("Compromisso removido com sucesso!");
                 fecharModalCadastro();
             } catch (e) {
@@ -1177,7 +1177,7 @@ let idAgendaEdicao = null;
 function abrirNovoCadastroAgenda() { idAgendaEdicao = null; mostrarModalFormAgenda("NOVO EVENTO"); }
 async function prepararEdicaoAgenda(id) {
     idAgendaEdicao = id;
-    const doc = await firestoreService.getDocument(COLECOES.AGENDA_GERAL || "agenda_geral", id);
+    const doc = await db.collection(COLECOES.AGENDA_GERAL || "agenda_geral").doc(id).get();
     if (doc.exists) mostrarModalFormAgenda("EDITAR EVENTO", doc.data());
 }
 
@@ -1686,35 +1686,35 @@ window.verificarPendenciasRma = function() {
     const mesAnteriorNome = mesesNomes[indexMesAnterior];
     const anoReferenciaStr = anoReferencia.toString();
 
-    firestoreService.getQuery(
-        COLECOES.CONTROLE_RMA || "controle_rma",
-        (ref) => ref.where("ano", "==", anoReferenciaStr).where("mes", "==", mesAnteriorNome)
-    )
-        .then((snapshot) => {
-            let cidadesComRegistro = [];
-            snapshot.forEach(doc => {
-                const d = doc.data();
-                if (d.data_envio && d.data_envio.trim() !== "" && d.data_envio !== "00/00/00" && d.data_envio !== "00/00/0000") {
-                    cidadesComRegistro.push(d.municipio);
-                }
-            });
+    db.collection(COLECOES.CONTROLE_RMA || "controle_rma")
+      .where("ano", "==", anoReferenciaStr)
+      .where("mes", "==", mesAnteriorNome)
+      .get()
+      .then((snapshot) => {
+          let cidadesComRegistro = [];
+          snapshot.forEach(doc => {
+              const d = doc.data();
+              if (d.data_envio && d.data_envio.trim() !== "" && d.data_envio !== "00/00/00" && d.data_envio !== "00/00/0000") {
+                  cidadesComRegistro.push(d.municipio);
+              }
+          });
 
-            let pendentes = MUNICIPIOS_LISTA.filter(c => !cidadesComRegistro.includes(c));
-            const temPendenciaGlobal = pendentes.length > 0 && diaAtual > 7;
+          let pendentes = MUNICIPIOS_LISTA.filter(c => !cidadesComRegistro.includes(c));
+          const temPendenciaGlobal = pendentes.length > 0 && diaAtual > 7;
 
-            // Aplica pulso tanto no card da Home quanto no botão de menu
-            aplicarEstiloPulsoRma(temPendenciaGlobal);
+          // Aplica pulso tanto no card da Home quanto no botão de menu
+          aplicarEstiloPulsoRma(temPendenciaGlobal);
 
-            const faixa = document.getElementById('alertaPendenciaRma');
-            if (faixa) {
-                if (pendentes.includes(CIDADE_ATUAL_RMA) && diaAtual > 7) {
-                    faixa.style.display = 'flex';
-                    faixa.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ATENÇÃO: Hoje é dia ${diaAtual} e o RMA de <b>${mesAnteriorNome}</b> está pendente para: <b>${CIDADE_ATUAL_RMA}</b>`;
-                } else {
-                    faixa.style.display = 'none';
-                }
-            }
-        });
+          const faixa = document.getElementById('alertaPendenciaRma');
+          if (faixa) {
+              if (pendentes.includes(CIDADE_ATUAL_RMA) && diaAtual > 7) {
+                  faixa.style.display = 'flex';
+                  faixa.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ATENÇÃO: Hoje é dia ${diaAtual} e o RMA de <b>${mesAnteriorNome}</b> está pendente para: <b>${CIDADE_ATUAL_RMA}</b>`;
+              } else {
+                  faixa.style.display = 'none';
+              }
+          }
+      });
 };
 
 // ==========================================
@@ -1790,17 +1790,16 @@ window.abrirTelaRma = function() {
 };
 
 function escutarRmaRealTime() {
-    firestoreService.listenQuery(
-        COLECOES.CONTROLE_RMA || "controle_rma",
-        (ref) => ref.where("ano", "==", ANO_VIGENTE_RMA).where("municipio", "==", CIDADE_ATUAL_RMA),
-        (snapshot) => {
-            todosDadosRma = [];
-            snapshot.forEach(doc => todosDadosRma.push({ id: doc.id, ...doc.data() }));
-            const mesesOrdem = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
-            todosDadosRma.sort((a, b) => mesesOrdem.indexOf(a.mes) - mesesOrdem.indexOf(b.mes));
-            renderizarTabelaRma();
-        }
-    );
+    db.collection(COLECOES.CONTROLE_RMA || "controle_rma")
+      .where("ano", "==", ANO_VIGENTE_RMA)
+      .where("municipio", "==", CIDADE_ATUAL_RMA)
+      .onSnapshot((snapshot) => {
+        todosDadosRma = [];
+        snapshot.forEach(doc => todosDadosRma.push({ id: doc.id, ...doc.data() }));
+        const mesesOrdem = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
+        todosDadosRma.sort((a, b) => mesesOrdem.indexOf(a.mes) - mesesOrdem.indexOf(b.mes));
+        renderizarTabelaRma();
+    });
 }
 
 function renderizarTabelaRma() {
@@ -1847,7 +1846,7 @@ window.mudarAnoRma = (ano) => { ANO_VIGENTE_RMA = ano; escutarRmaRealTime(); };
 window.abrirNovoCadastroRma = () => { idRmaEdicao = null; mostrarModalFormRma(`NOVO RMA - ${CIDADE_ATUAL_RMA}`); };
 window.prepararEdicaoRma = async (id) => {
     idRmaEdicao = id;
-    const doc = await firestoreService.getDocument(COLECOES.CONTROLE_RMA || "controle_rma", id);
+    const doc = await db.collection(COLECOES.CONTROLE_RMA || "controle_rma").doc(id).get();
     if (doc.exists) mostrarModalFormRma("EDITAR REGISTRO", doc.data());
 };
 
@@ -1900,8 +1899,8 @@ async function salvarRmaFirebase() {
         ano: ANO_VIGENTE_RMA
     };
     try {
-        if (idRmaEdicao) await firestoreService.updateDocument(COLECOES.CONTROLE_RMA || "controle_rma", idRmaEdicao, dados);
-        else await firestoreService.addDocument(COLECOES.CONTROLE_RMA || "controle_rma", dados);
+        if (idRmaEdicao) await db.collection(COLECOES.CONTROLE_RMA || "controle_rma").doc(idRmaEdicao).update(dados);
+        else await db.collection(COLECOES.CONTROLE_RMA || "controle_rma").add(dados);
         fecharRmaFormulario();
         verificarPendenciasRma();
     } catch (e) { alert("Erro ao salvar."); }
@@ -1909,7 +1908,7 @@ async function salvarRmaFirebase() {
 
 async function excluirRmaFirebase() {
     if (confirm("Excluir este registro?")) {
-        await firestoreService.deleteDocument(COLECOES.CONTROLE_RMA || "controle_rma", idRmaEdicao);
+        await db.collection(COLECOES.CONTROLE_RMA || "controle_rma").doc(idRmaEdicao).delete();
         fecharRmaFormulario();
         verificarPendenciasRma();
     }
