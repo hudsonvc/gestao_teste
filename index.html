@@ -26,7 +26,7 @@
                 <p>Largo Dom João, 191 - Cep: 39100-000</p>
                 <p>Telefone: (38) 3531-8622 - (38) 98413-2059</p>
             </div>
-            <button onclick="fazerLogoutSistema()" style="position: absolute; right: 20px; top: 20px; padding: 10px 18px; border: 1px solid #d63031; background: #fff5f5; color: #d63031; cursor: pointer; font-weight: bold; border-radius: 6px; display: inline-flex; align-items: center; gap: 8px; font-family: 'Inter', sans-serif; transition: all 0.2s;" onmouseover="this.style.background='#d63031'; this.style.color='white'" onmouseout="this.style.background='#fff5f5'; this.style.color='#d63031'">
+            <button class="btn-sair-sistema" onclick="fazerLogoutSistema()">
                 <i class="fa-solid fa-right-from-bracket"></i> Sair do Sistema
             </button>
             
@@ -126,16 +126,16 @@
     </main>
 </div>
 
-<div id="modalCadastroJudicial" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:2000; align-items:center; justify-content:center; overflow-y:auto; padding: 20px;">
-    <div style="background: #f4f7f6; padding: 25px; border-radius: 12px; width: 100%; max-width: 950px; box-shadow: 0 15px 50px rgba(0,0,0,0.6); position: relative;">
-        <span onclick="fecharModalCadastro()" style="position:absolute; right:20px; top:15px; cursor:pointer; font-size:28px; color:#c0392b;">&times;</span>
-        <h3 id="tituloModalCadastro" style="margin-top:0; color:#2c3e50; border-bottom: 3px solid #3498db; padding-bottom: 10px;">GESTÃO DE PROCESSO JUDICIAL</h3>
+<div id="modalCadastroJudicial" class="modal-cadastro-judicial">
+    <div class="modal-cadastro-card">
+        <span class="modal-cadastro-fechar" onclick="fecharModalCadastro()">&times;</span>
+        <h3 id="tituloModalCadastro" class="modal-cadastro-titulo">GESTÃO DE PROCESSO JUDICIAL</h3>
         
-        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; background: white; padding: 15px; border-radius: 8px;">
+        <div class="modal-cadastro-grid">
             <input type="text" id="addRemetente" placeholder="Remetente">
             <input type="text" id="addMeio" placeholder="Meio de Recebimento">
             <input type="text" id="addProcesso" placeholder="Nº Processo">
-            <input type="text" id="addNome" style="grid-column: span 2;" placeholder="Nome Completo">
+            <input type="text" id="addNome" class="campo-nome-completo" placeholder="Nome Completo">
             <select id="addMunicipio">
                 <option value="Couto de Magalhães">Couto de Magalhães</option>
                 <option value="Datas">Datas</option>
@@ -145,21 +145,21 @@
             </select>
         </div>
 
-        <div style="margin-top: 20px; background: #eef2f3; padding: 20px; border-radius: 10px; border: 2px solid #3498db;">
-            <label style="font-weight:bold; color:#2980b9; display: block; margin-bottom: 15px; font-size: 13px; text-transform: uppercase;">
+        <div class="historico-demandas-box">
+            <label class="historico-demandas-label">
                 <i class="fa-solid fa-list-check"></i> Histórico de Demandas
             </label>
             <div id="containerLinhasDatas"></div>
-            <button onclick="adicionarNovaLinhaData()" style="background:#2d3436; color:white; border:none; padding:12px; border-radius:6px; cursor:pointer; font-weight:bold; width: 100%; margin-top: 15px;">
+            <button class="btn btn-primario btn-largura-total" onclick="adicionarNovaLinhaData()">
                 <i class="fa-solid fa-plus-circle"></i> ADICIONAR NOVA DEMANDA
             </button>
         </div>
 
-        <div style="display: flex; gap: 15px; margin-top: 30px;">
-            <button onclick="salvarNoFirebase()" style="flex: 2; padding: 18px; background: #2d3436; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; font-size:16px;">
+        <div class="modal-cadastro-acoes">
+            <button class="btn btn-primario btn-salvar-cadastro" onclick="salvarNoFirebase()">
                 <i class="fa-solid fa-cloud-arrow-up"></i> SALVAR
             </button>
-            <button onclick="fecharModalCadastro()" style="flex: 1; padding: 18px; background: #95a5a6; color: white; border: none; border-radius: 8px; cursor: pointer;">Cancelar</button>
+            <button class="btn btn-secundario btn-cancelar-cadastro" onclick="fecharModalCadastro()">Cancelar</button>
         </div>
     </div>
 </div>
@@ -171,7 +171,7 @@
         <div id="modalOptions" class="modal-grid"></div>
     </div>
 </div>
-<div id="modalNaoJudicialModerno" class="modal-judicial" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); z-index:1000; justify-content:center; align-items:center;">
+<div id="modalNaoJudicialModerno" class="modal-judicial modal-nao-judicial-moderno">
     </div>
 <div id="modalJudicialModerno" class="modal">
     <div class="modal-content extra-largo">
@@ -229,6 +229,9 @@
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-firestore.js"></script>
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+<script src="js/config/collections.js"></script>
+<script src="js/utils/cidade.js"></script>
+<script src="js/data/menus.js"></script>
 <script src="script.js"></script> 
 
 
