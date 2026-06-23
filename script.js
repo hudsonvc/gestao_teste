@@ -1808,7 +1808,7 @@ function renderizarTabelaRma() {
     corpo.innerHTML = '';
 
     if(todosDadosRma.length === 0) {
-        corpo.innerHTML = `<tr><td colspan="6" style="padding: 40px; text-align: center; color: #95a5a6;">Nenhum registro encontrado para esta cidade em ${ANO_VIGENTE_RMA}.</td></tr>`;
+        corpo.innerHTML = rmaView.renderTabelaVazia(ANO_VIGENTE_RMA);
         return;
     }
 
