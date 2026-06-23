@@ -26,7 +26,7 @@
                 <p>Largo Dom João, 191 - Cep: 39100-000</p>
                 <p>Telefone: (38) 3531-8622 - (38) 98413-2059</p>
             </div>
-            <button class="btn-sair-sistema" onclick="fazerLogoutSistema()">
+            <button id="btnSairSistema" class="btn-sair-sistema" type="button">
                 <i class="fa-solid fa-right-from-bracket"></i> Sair do Sistema
             </button>
             
@@ -49,7 +49,7 @@
             <span>Sistema PAF</span>
         </a>
 
-        <div class="service-card" onclick="abrirModal('paefi_unificado')">
+        <div class="service-card" data-modal="paefi_unificado" role="button" tabindex="0">
             <div class="icon-box"><i class="fa-solid fa-users-rectangle"></i></div>
             <span>PAEFI - Registro Simplificado <br>e Acolhida</span>
         </div>
@@ -59,42 +59,42 @@
             <span>CREAS Público</span>
         </a>
 
-        <div class="service-card" onclick="abrirModal('judicial')">
+        <div class="service-card" data-modal="judicial" role="button" tabindex="0">
             <div class="icon-box"><i class="fa-solid fa-gavel"></i></div>
             <span>Acompanhamento<br>Judicial</span>
         </div>
 
-        <div class="service-card" onclick="abrirModal('judicial_municipios')">
+        <div class="service-card" data-modal="judicial_municipios" role="button" tabindex="0">
             <div class="icon-box"><i class="fa-solid fa-map-location-dot"></i></div>
             <span>Acompanhamento Judicial por<br>Município</span>
         </div>
 
-        <div class="service-card" onclick="abrirModal('fichas_familia')">
+        <div class="service-card" data-modal="fichas_familia" role="button" tabindex="0">
             <div class="icon-box"><i class="fa-solid fa-file-circle-check"></i></div>
             <span>Fichas de Acompanhamento<br>Familiar</span>
         </div>
 
-        <div class="service-card" onclick="abrirModal('mulher')">
+        <div class="service-card" data-modal="mulher" role="button" tabindex="0">
             <div class="icon-box"><i class="fa-solid fa-venus"></i></div>
             <span>Ficha de Acompanhamento à<br>Mulher</span>
         </div>
 
-        <div class="service-card" onclick="abrirModal('recepcao')">
+        <div class="service-card" data-modal="recepcao" role="button" tabindex="0">
             <div class="icon-box"><i class="fa-solid fa-headset"></i></div>
             <span>Recepção</span>
         </div>
 
-        <div class="service-card" onclick="abrirModal('oficios')">
+        <div class="service-card" data-modal="oficios" role="button" tabindex="0">
             <div class="icon-box"><i class="fa-solid fa-envelope-open-text"></i></div>
             <span>Controle de<br>Ofícios 2026</span>
         </div>
 
-        <div id="card-rma" class="service-card" onclick="abrirModal('rma')">
+        <div id="card-rma" class="service-card" data-modal="rma" role="button" tabindex="0">
             <div class="icon-box"><i class="fa-solid fa-chart-line"></i></div>
             <span>Controle RMA</span>
         </div>
 
-        <div class="service-card" onclick="abrirModal('contatos')">
+        <div class="service-card" data-modal="contatos" role="button" tabindex="0">
             <div class="icon-box"><i class="fa-solid fa-address-book"></i></div>
             <span>Lista de<br>Contatos</span>
 
@@ -104,26 +104,31 @@
 
         
 
-        <div class="service-card" onclick="abrirModal('agenda')">
+        <div class="service-card" data-modal="agenda" role="button" tabindex="0">
             <div class="icon-box"><i class="fa-solid fa-calendar-check"></i></div>
             <span>Agenda 2026</span>
         </div>
 
-        <div class="service-card" onclick="abrirModal('historico')">
+        <div class="service-card" data-modal="historico" role="button" tabindex="0">
             <div class="icon-box"><i class="fa-solid fa-box-archive"></i></div>
             <span>Histórico /<br>Arquivo</span>
         </div>
     
-        <div class="service-card" onclick="window.open('https://creasaltojequitinhonha-paf.github.io/creas-almox/', '_blank')">
+        <div class="service-card" data-external-url="https://creasaltojequitinhonha-paf.github.io/creas-almox/" role="button" tabindex="0">
             <div class="icon-box"><i class="fa-solid fa-boxes-stacked"></i></div>
             <span>Controle de<br>Almoxarifado</span>
         </div>
 
-        <div class="service-card" onclick="abrirModal('gemini_ajuda')">
+        <div class="service-card" data-modal="gemini_ajuda" role="button" tabindex="0">
             <div class="icon-box"><i class="fa-solid fa-robot"></i></div>
             <span>Ajuda com IA<br>(Gemini)</span>
         </div>
     </main>
+
+    <section class="status-cidades-section" aria-labelledby="statusCidadesTitulo">
+        <h2 id="statusCidadesTitulo">Status das cidades</h2>
+        <div id="gridStatusCidades" class="grid-status-cidades" aria-live="polite"></div>
+    </section>
 </div>
 
 <div id="modalCadastroJudicial" class="modal-cadastro-judicial">
@@ -232,7 +237,13 @@
 <script src="js/config/collections.js"></script>
 <script src="js/services/firebaseService.js"></script>
 <script src="js/utils/cidade.js"></script>
+<script src="js/utils/rma.js"></script>
 <script src="js/data/menus.js"></script>
+<script src="js/services/rmaService.js"></script>
+<script src="js/services/backupService.js"></script>
+<script src="js/services/judicialService.js"></script>
+<script src="js/services/agendaService.js"></script>
+<script src="js/views/rmaView.js"></script>
 <script src="script.js"></script> 
 
 
