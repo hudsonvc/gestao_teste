@@ -81,15 +81,45 @@ const menus = window.MENUS_SISTEMA || {};
 
 // --- INICIALIZAÇÃO ---
 document.addEventListener('DOMContentLoaded', () => {
+    configurarEventosPortal();
     carregarStatusCidades();
     setInterval(carregarStatusCidades, 300000);
 });
 
-function mostrarAba(abaId) {
+function configurarEventosPortal() {
+    document.querySelectorAll('[data-modal]').forEach((card) => {
+        const abrirCard = () => abrirModal(card.dataset.modal);
+        card.addEventListener('click', abrirCard);
+        card.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                abrirCard();
+            }
+        });
+    });
+
+    document.querySelectorAll('[data-external-url]').forEach((card) => {
+        const abrirLinkExterno = () => window.open(card.dataset.externalUrl, '_blank', 'noopener');
+        card.addEventListener('click', abrirLinkExterno);
+        card.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                abrirLinkExterno();
+            }
+        });
+    });
+
+    const botaoSair = document.getElementById('btnSairSistema');
+    if (botaoSair) {
+        botaoSair.addEventListener('click', fazerLogoutSistema);
+    }
+}
+
+function mostrarAba(abaId, evento) {
     document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
     document.querySelectorAll('.tab-button').forEach(btn => btn.classList.remove('active'));
-    document.getElementById(abaId).classList.add('active');
-    event.currentTarget.classList.add('active');
+    document.getElementById(abaId)?.classList.add('active');
+    evento?.currentTarget?.classList.add('active');
 }
 
 // --- MODAIS GERAIS ---
@@ -125,6 +155,7 @@ async function carregarStatusCidades() {
             servico: cabecalho.findIndex(c => c.trim().toUpperCase() === "SERVIÇO")
         };
         const container = document.getElementById('gridStatusCidades');
+        if (!container) return;
         container.innerHTML = "";
         const cidadesUnicas = [...new Set(dados.map(d => d[indices.cidade]?.trim()).filter(Boolean))];
         cidadesUnicas.forEach(cid => {
