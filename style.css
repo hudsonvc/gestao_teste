@@ -1,0 +1,382 @@
+:root {
+    --primary-blue: #3b82f6;
+    --dark-blue: #1e3a8a;
+    --bg-light: #f1f5f9;
+    --text-color: #334155;
+}
+
+body {
+    font-family: 'Inter', sans-serif;
+    margin: 0;
+    /* Gradiente linear: Começa num azul bem clarinho e vai para o cinza gelo */
+    background: linear-gradient(135deg, #bfc1c4 0%, #f1f5f9 50%, #ffffff 100%) !important;
+    
+
+    background-attachment: fixed; /* Mantém o fundo fixo ao rolar */
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Garantir que o container não esconda o fundo */
+.container {
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 20px;
+    background: transparent; /* Certifica que o fundo do container é invisível */
+}
+
+.header-text h1 {
+    color: #1e3a8a;
+    font-size: 1.5rem;
+}
+
+.header-text p {
+    color: #64748b; /* Cinza para o subtexto */
+}
+
+/* Container focado em centralização vertical */
+.header-container-central {
+    display: flex;
+    flex-direction: column; /* Coloca a logo em cima e o texto embaixo */
+    align-items: center;    /* Centraliza horizontalmente */
+    justify-content: center;
+    padding: 20px;
+    text-align: center;
+}
+
+.header-logo-central img {
+    height: 150px; /* Tamanho levemente maior já que está sozinha */
+    width: auto;
+    margin-bottom: 15px; /* Espaço entre a logo e o título */
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.2)); /* Sombra para dar profundidade */
+}
+
+.main-header {
+    background-color: #F0F8FF;
+    color: var(--dark-blue);
+    padding: 25px 0;
+    border-radius: 0 0 25px 25px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+}
+
+.header-content-row {
+    display: flex;
+    flex-direction: row; /* Coloca lado a lado */
+    align-items: center;    /* Centraliza verticalmente a logo com o texto */
+    justify-content: center; /* Centraliza o conjunto todo no meio da tela */
+    gap: 20px;              /* Espaço entre a logo e o texto */
+    padding: 0 20px;
+}
+
+.header-logo-side img {
+    height: 150px; /* Tamanho da logo */
+    width: auto;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.2));
+}
+
+.header-text-side {
+    text-align: center; /* Alinha o texto à esquerda para combinar com a logo ao lado */
+}
+
+.header-text-side h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 800;
+}
+
+.header-text-side p {
+    margin: 2px 0 0;
+    font-size: 0.95rem;
+    opacity: 0.9;
+}
+
+/* Ajuste para celulares (coloca um em cima do outro se a tela for pequena) */
+@media (max-width: 600px) {
+    .header-content-row {
+        flex-direction: column;
+        text-align: center;
+    }
+    .header-text-side {
+        text-align: center;
+    }
+}
+
+/* Área de Busca - Ajustada para descer */
+.search-area {
+    max-width: 500px;
+    margin: 50px auto 30px; /* 50px de espaço superior em relação ao header */
+    padding: 0 15px;
+}
+
+.search-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-wrapper i {
+    position: absolute;
+    left: 15px;
+    color: #94a3b8;
+}
+
+.search-area input {
+    width: 100%;
+    padding: 12px 15px 12px 45px;
+    border-radius: 8px;
+    border: 1px solid #cbd5e1;
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    outline: none;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.search-area input:focus {
+    border-color: #3b82f6;
+}
+
+.header-logo img {
+    height: 65px; /* Altura ideal para não quebrar o cabeçalho */
+    width: auto;
+    display: block;
+    filter: drop-shadow(0px 2px 2px rgba(0,0,0,0.3)); /* Dá destaque às logos */
+}
+
+.header-container {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 30px; /* Espaço nas laterais das logos */
+}
+
+.header-text {
+    text-align: center;
+    flex-grow: 1;
+}
+
+.header-text h1 {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 800;
+}
+
+.header-text p {
+    margin: 5px 0 0;
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Ajuste para telas de celular */
+@media (max-width: 600px) {
+    .header-container {
+        flex-direction: column;
+        gap: 15px;
+    }
+    .header-logo img {
+        height: 50px;
+    }
+}
+
+.portal-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+    gap: 20px;
+}
+
+.service-card {
+    background: white;
+    aspect-ratio: 1 / 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-decoration: none;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+    cursor: pointer;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.service-card:hover {
+    background-color: var(--primary-blue);
+    transform: translateY(-5px);
+}
+
+.icon-box { font-size: 40px; color: var(--primary-blue); margin-bottom: 15px; }
+.service-card span {
+    color: var(--text-color);
+    font-weight: 600;
+    font-size: 14px;       /* Diminuímos de 14px para 12px */
+    text-align: center;
+    line-height: 1.3;      /* Melhora o espaçamento entre as linhas da quebra */
+    padding: 01 10px;       /* Evita que o texto encoste nas bordas do card */
+    display: block;        /* Garante que o span se comporte como bloco para quebrar */
+    word-wrap: break-word; /* Força a quebra de palavras muito longas se necessário */
+}
+
+/* Ajuste opcional no card para dar mais espaço ao texto */
+.service-card {
+    padding: 15px 10px;    /* Aumenta um pouco o respiro interno */
+    justify-content: center;
+}
+.service-card:hover .icon-box, .service-card:hover span { color: white; }
+
+/* MODAL */
+.modal {
+    display: none;
+    position: fixed; z-index: 1000;
+    left: 0; top: 0; width: 100%; height: 100%;
+    background-color: rgba(0,0,0,0.6);
+    align-items: center; justify-content: center;
+    backdrop-filter: blur(4px);
+}
+
+.modal-content {
+    background: white; padding: 30px; border-radius: 15px;
+    width: 90%; max-width: 450px; position: relative;
+    animation: slideUp 0.3s ease;
+    
+}
+.modal-content {
+    max-height: 85vh; /* Limita a altura a 85% da tela */
+    overflow-y: auto; /* Adiciona scroll se as opções passarem da altura */
+    /* ... mantenha o restante das suas regras ... */
+}
+
+@keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.close-btn { position: absolute; right: 20px; top: 15px; font-size: 24px; cursor: pointer; color: #94a3b8; }
+
+.modal-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 20px; }
+
+.modal-option {
+    display: flex; align-items: center; padding: 15px;
+    background: #f8fafc; border: 1px solid #e2e8f0;
+    border-radius: 10px; text-decoration: none;
+    color: var(--text-color); font-weight: 600;
+}
+
+.modal-option i { margin-right: 15px; color: var(--primary-blue); width: 25px; text-align: center; }
+.modal-option:hover { background: var(--primary-blue); color: white; }
+.modal-option:hover i { color: white; }
+
+/* --- ESTILO PARA O CARD RMA PULSAR --- */
+
+/* Esta é a classe que o seu JS adiciona quando rmaPendente = true */
+.alerta-vencido {
+    position: relative;
+    border: 2px solid #ef4444 !important; /* Borda vermelha forte */
+    animation: pulso-rma 2s infinite;      /* Chama a animação abaixo */
+    background-color: #fff1f2 !important; /* Fundo levemente avermelhado */
+}
+
+/* Criando a animação do pulso */
+@keyframes pulso-rma {
+    0% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+        transform: scale(1);
+    }
+    70% {
+        box-shadow: 0 0 0 15px rgba(239, 68, 68, 0);
+        transform: scale(1.02); /* Aumenta levemente o tamanho */
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+        transform: scale(1);
+    }
+}
+
+/* Opcional: Estilo para a Badge (etiqueta) dentro do modal */
+.badge-pendente {
+    background-color: #ef4444;
+    color: white;
+    font-size: 10px;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: auto;
+    text-transform: uppercase;
+    font-weight: bold;
+}
+.btn-atualizar {
+    background-color: var(--primary-blue);
+    color: white;
+    border: none;
+    padding: 8px 15px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 600;
+    transition: 0.3s;
+}
+
+.btn-atualizar:hover {
+    background-color: var(--dark-blue);
+    transform: scale(1.05);
+}
+
+/* Efeito de girar o ícone ao clicar */
+.btn-atualizar:active i {
+    transform: rotate(180deg);
+    transition: 0.2s;
+}
+/* Adicione isso ao seu style.css da Gestão Integrada */
+.card-almox {
+    background-color: #f0f7ff; /* Um azul bem clarinho */
+    border: 1px solid #cce3ff;
+}
+
+.card-almox i {
+    color: #2563eb; /* Ícone azul destacado */
+}
+
+/* Novo design para o modal de Judicial */
+
+.judicial-controls { display: flex; gap: 15px; margin-bottom: 20px; align-items: center; flex-wrap: wrap; }
+#inputBuscaJudicial { flex: 1; padding: 10px; border-radius: 8px; border: 1px solid #ddd; }
+
+.btn-filtro { background: none; border: none; padding: 10px; cursor: pointer; font-weight: 600; opacity: 0.6; }
+.btn-filtro.active { opacity: 1; transform: scale(1.05); }
+
+.tabela-judicial-wrapper { max-height: 90vh; overflow-y: auto; border: 1px solid #eee; border-radius: 8px; }
+#tabelaJudicialReal { width: 100%; border-collapse: collapse; background: white; }
+#tabelaJudicialReal th { position: sticky; top: 0; background: #f8f9fa; padding: 15px; text-align: left; z-index: 10; }
+#tabelaJudicialReal td { padding: 12px 15px; border-bottom: 1px solid #eee; font-size: 14px; }
+
+/* As Cores da sua Planilha */
+.linha-respondido { background-color: #d4edda !important; } /* Verde */
+.linha-periodico { background-color: #fff3cd !important; }  /* Amarelo */
+.linha-protetiva { background-color: #e2d9f3 !important; }  /* Roxo */
+.linha-prazo { background-color: #f8d7da !important; }      /* Laranja/Vermelho */
+
+.btn-pasta-judicial { 
+    background: #4285f4; color: white; padding: 5px 10px; border-radius: 4px; 
+    text-decoration: none; font-size: 12px; display: inline-flex; align-items: center; gap: 5px;
+}
+
+/* CSS para permitir que o modal cresça na horizontal */
+/* Força a largura total na tela judicial */
+.modal-content.extra-largo {
+    width: 98vw !important;
+    max-width: 1600px !important;
+    margin: 1% auto !important;
+    padding: 20px !important;
+}
+
+.tabela-judicial-wrapper {
+    overflow-x: auto;
+    width: 100%;
+}
+
+#tabelaJudicialReal {
+    width: 100%;
+    min-width: 1100px; /* Isso impede que as colunas fiquem espremidas */
+    border-collapse: collapse;
+}
+
+.badge-status-respondido { background: #d4edda; color: #155724; padding: 2px 5px; border-radius: 4px; border: 1px solid #c3e6cb; }
+.badge-status-periodico { background: #fff3cd; color: #856404; padding: 2px 5px; border-radius: 4px; border: 1px solid #ffeeba; }
+.badge-status-protetiva { background: #e2d9f3; color: #512da8; padding: 2px 5px; border-radius: 4px; border: 1px solid #d1c4e9; }
+.badge-status-normal { background: #f8f9fa; color: #333; padding: 2px 5px; border-radius: 4px; border: 1px solid #ddd; }
