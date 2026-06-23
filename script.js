@@ -1998,7 +1998,6 @@ function inicializarSistemaBackupDiscreto() {
                 const snapshot = await firestoreService.getCollection(nomeCol);
                 if (snapshot.empty) continue;
 
-                const dados = snapshot.docs.map(doc => ({ id_doc: doc.id, ...doc.data() }));
                 const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
