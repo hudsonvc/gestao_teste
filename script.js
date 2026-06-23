@@ -1,17 +1,8 @@
-// --- CONFIGURAÇÃO FIREBASE ---
-const firebaseConfig = {
-    apiKey: "AIzaSyBnHxMaz-JoMuFmz8OkD9SDLAoYH0w_Sps",
-    authDomain: "sistema-creas-paf.firebaseapp.com",
-    projectId: "sistema-creas-paf",
-    storageBucket: "sistema-creas-paf.firebasestorage.app",
-    messagingSenderId: "571371015910",
-    appId: "1:571371015910:web:690ebbff3cbad88e283527"
-};
-
-if (!firebase.apps.length) {
-    firebase.initializeApp(firebaseConfig);
-}
-const db = firebase.firestore();
+// --- SERVIÇOS FIREBASE/FIRESTORE ---
+const firebaseServices = window.firebaseServices;
+const firestoreService = firebaseServices.firestore;
+const db = firebaseServices.db;
+const auth = firebaseServices.auth;
 
 
 
@@ -34,7 +25,7 @@ window.prepararEdicao = async (id, col) => {
     }
 
     try {
-        const doc = await db.collection(col).doc(id).get();
+        const doc = await firestoreService.getDocument(col, id);
         if (doc.exists) {
             const d = doc.data();
 
@@ -356,7 +347,7 @@ function carregarDadosJudiciaisNaTabelaReal(tipo) {
     const mapaCidades = { "sgrp": "São Gonçalo do Rio Preto", "couto": "Couto de Magalhães", "datas": "Datas", "gouveia": "Gouveia", "monjolos": "Monjolos", "felicio": "Felício dos Santos" };
     const filtroNorm = (mapaCidades[filtroCidRaw] || filtroCidRaw).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-    db.collection(colecaoAtiva).onSnapshot((snapshot) => {
+    firestoreService.listenCollection(colecaoAtiva, (snapshot) => {
         let todosDados = [];
         snapshot.forEach(doc => {
             const d = doc.data();
@@ -572,7 +563,7 @@ window.solicitarExclusaoModal = (id, colecao, nomeUsuario, tipoAtual) => {
             document.getElementById('btnConfirmarExclusao').innerText = "Excluindo...";
             document.getElementById('btnConfirmarExclusao').disabled = true;
 
-            await db.collection(colecao).doc(id).delete();
+            await firestoreService.deleteDocument(colecao, id);
 
             dialog.close();
             dialog.remove();
@@ -792,30 +783,32 @@ window.mudarAnoAgenda = (novoAno) => {
 };
 
 function escutarAgendaRealTime() {
-    db.collection(COLECOES.AGENDA_GERAL || "agenda_geral")
-      .orderBy("data_criacao", "desc")
-      .onSnapshot((snapshot) => {
-        todosDadosAgenda = [];
-        snapshot.forEach(doc => {
-            const d = doc.data();
-            if (String(d.ano) === ANO_VIGENTE_AGENDA) {
-                todosDadosAgenda.push({ id: doc.id, ...d });
-            }
-        });
+    firestoreService.listenQuery(
+        COLECOES.AGENDA_GERAL || "agenda_geral",
+        (ref) => ref.orderBy("data_criacao", "desc"),
+        (snapshot) => {
+            todosDadosAgenda = [];
+            snapshot.forEach(doc => {
+                const d = doc.data();
+                if (String(d.ano) === ANO_VIGENTE_AGENDA) {
+                    todosDadosAgenda.push({ id: doc.id, ...d });
+                }
+            });
 
-        todosDadosAgenda.sort((a, b) => {
-            const conv = (s) => {
-                if(!s || !s.includes('/')) return 0;
-                const [d, m, y] = s.split('/');
-                return new Date(y, m - 1, d).getTime();
-            };
-            return conv(b.data) - conv(a.data);
-        });
+            todosDadosAgenda.sort((a, b) => {
+                const conv = (s) => {
+                    if(!s || !s.includes('/')) return 0;
+                    const [d, m, y] = s.split('/');
+                    return new Date(y, m - 1, d).getTime();
+                };
+                return conv(b.data) - conv(a.data);
+            });
 
-        const modalAberto = document.getElementById('modalJudicialModerno').style.display === 'flex';
-        if(modalAberto) { verificarCompromissosHoje(); }
-        carregarDadosAgendaReal();
-    });
+            const modalAberto = document.getElementById('modalJudicialModerno').style.display === 'flex';
+            if(modalAberto) { verificarCompromissosHoje(); }
+            carregarDadosAgendaReal();
+        }
+    );
 }
 
 function carregarDadosAgendaReal() {
@@ -1147,7 +1140,7 @@ async function salvarAgendaFirebase() {
         equipe: document.getElementById('f_ag_equipe').value,
         observacoes: document.getElementById('f_ag_obs').value,
         ano: ANO_VIGENTE_AGENDA,
-        data_criacao: firebase.firestore.Timestamp.now()
+        data_criacao: firebaseServices.timestampNow()
     };
 
     try {
@@ -1293,15 +1286,15 @@ window.salvarNoFirebase = async () => {
 
         if (idProcessoEmEdicao) {
             if (colecaoOrigem !== colecaoDestinoFinal) {
-                await db.collection(colecaoOrigem).doc(idProcessoEmEdicao).delete();
-                await db.collection(colecaoDestinoFinal).add(dados);
+                await firestoreService.deleteDocument(colecaoOrigem, idProcessoEmEdicao);
+                await firestoreService.addDocument(colecaoDestinoFinal, dados);
                 mostrarToast("Processo atualizado e movido de aba com sucesso!");
             } else {
-                await db.collection(colecaoOrigem).doc(idProcessoEmEdicao).update(dados);
+                await firestoreService.updateDocument(colecaoOrigem, idProcessoEmEdicao, dados);
                 mostrarToast("Processo atualizado com sucesso!");
             }
         } else {
-            await db.collection(colecaoDestinoFinal).add(dados);
+            await firestoreService.addDocument(colecaoDestinoFinal, dados);
             mostrarToast("Novo processo cadastrado com sucesso!");
         }
 
@@ -2002,7 +1995,7 @@ function inicializarSistemaBackupDiscreto() {
 
         try {
             for (const nomeCol of colecoes) {
-                const snapshot = await db.collection(nomeCol).get();
+                const snapshot = await firestoreService.getCollection(nomeCol);
                 if (snapshot.empty) continue;
 
                 const dados = snapshot.docs.map(doc => ({ id_doc: doc.id, ...doc.data() }));
@@ -2259,7 +2252,7 @@ function configurarSistemaLoginCREAS() {
         btnEntrar.disabled = true;
 
         try {
-            await firebase.auth().signInWithEmailAndPassword(email, senha);
+            await auth.signInWithEmailAndPassword(email, senha);
         } catch (erro) {
             console.error("Erro no login: ", erro.code);
             txtErro.style.display = 'block';
@@ -2281,7 +2274,7 @@ function configurarSistemaLoginCREAS() {
     let jaExibiuBoasVindas = false;
 
     // 4. O OBSERVADOR EM TEMPO REAL
-    firebase.auth().onAuthStateChanged((usuario) => {
+    auth.onAuthStateChanged((usuario) => {
         if (usuario) {
             telaLogin.style.display = 'none';
             console.log("Usuário autenticado com sucesso: ", usuario.email);
@@ -2437,7 +2430,7 @@ function fazerLogoutSistema() {
 
     document.getElementById('logout-btn-confirmar').addEventListener('click', () => {
         painelModal.remove();
-        firebase.auth().signOut(); // Executa o encerramento no Firebase
+        auth.signOut(); // Executa o encerramento no Firebase
     });
 
     // Fecha o modal caso o usuário clique na área escura de fora
