@@ -25,7 +25,7 @@ window.prepararEdicao = async (id, col) => {
     modal.setAttribute('data-colecao', col);
     document.getElementById('tituloModalCadastro').innerText = "EDITAR  PROCESSO";
 
-    const conteudoInterno = modal.querySelector('div'); 
+    const conteudoInterno = modal.querySelector('div');
     if (conteudoInterno) {
         conteudoInterno.style.maxHeight = '95vh';
         conteudoInterno.style.display = 'flex';
@@ -37,7 +37,7 @@ window.prepararEdicao = async (id, col) => {
         const doc = await db.collection(col).doc(id).get();
         if (doc.exists) {
             const d = doc.data();
-            
+
             // Preenche os campos fixos com suporte a nomes alternativos do banco
             document.getElementById('addNome').value = d.nome || d.nomeUsuario || d.parteUsuario || d["Nome da Família ou Usuário"] || '';
             document.getElementById('addProcesso').value = d.processo || d.numeroOficio || d.numeroProcesso || d["Número do Processo"] || '';
@@ -61,36 +61,22 @@ window.prepararEdicao = async (id, col) => {
                 });
             }
         }
-    } catch (e) { 
-        console.error("Erro ao editar:", e); 
+    } catch (e) {
+        console.error("Erro ao editar:", e);
     }
 
     document.body.style.overflow = 'hidden';
 };
 
-// --- FUNÇÃO AUXILIAR PARA SEMPRE QUE ADICIONAR UMA LINHA, DAR SCROLL PARA BAIXO ---
-function adicionarNovaLinhaData(item) {
-    // ... sua lógica atual de criar a linha ...
-    // (Apenas um exemplo do comando de scroll abaixo)
+// --- FUNÇÃO AUXILIAR PARA ROLAR O HISTÓRICO RECÉM-ALTERADO ---
+function rolarHistoricoParaBaixo() {
     const container = document.getElementById('containerLinhasDatas');
-    if (container) {
-        // Isso faz o scroll descer automaticamente quando você clica em "Adicionar Nova Demanda"
-        setTimeout(() => {
-            container.scrollTop = container.scrollHeight;
-        }, 100);
-    }
+    if (!container) return;
+
+    setTimeout(() => {
+        container.scrollTop = container.scrollHeight;
+    }, 100);
 }
-
-// --- FUNÇÃO PARA FECHAR MODAL ---
-window.fecharModalCadastro = function() {
-    const modal = document.getElementById('modalCadastroJudicial');
-    if (modal) {
-        modal.style.display = 'none';
-        // Remove a trava de scroll do corpo da página ao fechar
-        document.body.style.overflow = 'auto';
-    }
-};
-
 
 // --- VARIÁVEIS GLOBAIS ---
 const LINK_PLANILHA_STATUS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRNo1Y9qY1yAnErz_e1s26mpUD6vGxvzfsWbB0fwDxkQf9LadfBouevcOopjdJSZHIPR7vEnG39eDtx/pub?gid=1540001503&single=true&output=csv";
@@ -121,7 +107,7 @@ const menus = {
         opcoes: [
             { texto: "Judicial - Geral ", link: "javascript:abrirTelaJudicial()", icone: "fa-scale-balanced" },
             { texto: "Não Judicial - Geral", link: "javascript:abrirTelaNaoJudicial()", icone: "fa-file-signature" },
-            { texto: "Acompanhamento Advogada", link: "javascript:abrirTelaAdvogada()", icone: "fa-user-tie" } 
+            { texto: "Acompanhamento Advogada", link: "javascript:abrirTelaAdvogada()", icone: "fa-user-tie" }
         ]
     },
     judicial_municipios: {
@@ -168,26 +154,26 @@ const menus = {
     },
     agenda: {
         titulo: "Agenda 2026",
-        opcoes: [ 
-            { 
-                texto: "Acessar Agenda 2026", 
-                link: "javascript:abrirTelaAgenda()", 
-                icone: "fa-calendar-days" 
-            } 
+        opcoes: [
+            {
+                texto: "Acessar Agenda 2026",
+                link: "javascript:abrirTelaAgenda()",
+                icone: "fa-calendar-days"
+            }
         ]
     },
 rma: {
     titulo: "RMA",
-    opcoes: [ 
-        { 
-            texto: 'Controle de Envio <span id="indicador-pulsar-rma"></span>', 
-            link: "javascript:abrirTelaRma()", 
-            icone: "fa-chart-simple" 
+    opcoes: [
+        {
+            texto: 'Controle de Envio <span id="indicador-pulsar-rma"></span>',
+            link: "javascript:abrirTelaRma()",
+            icone: "fa-chart-simple"
         },
-        { 
-            texto: "Planilha RMA", 
-            link: "https://docs.google.com/spreadsheets/d/1pReSzUNUYKIs5syqHVxzMPnuGJBC_0eP2PJWJmdazpI/edit?usp=sharing", 
-            icone: "fa-magnifying-glass-chart" 
+        {
+            texto: "Planilha RMA",
+            link: "https://docs.google.com/spreadsheets/d/1pReSzUNUYKIs5syqHVxzMPnuGJBC_0eP2PJWJmdazpI/edit?usp=sharing",
+            icone: "fa-magnifying-glass-chart"
         }
     ]
 },
@@ -265,12 +251,19 @@ async function carregarStatusCidades() {
 // --- FUNÇÃO AUXILIAR PARA NORMALIZAR NOMES DE CIDADES ---
 function normalizarCidade(nome) {
     if (!nome) return "";
-    let n = nome.trim().toLowerCase();
-    if (n.includes("couto") || n.includes("magalhães") || n.includes("malhães")) return "couto";
+
+    const n = nome
+        .toString()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .trim()
+        .toLowerCase();
+
+    if (n.includes("couto") || n.includes("magalhaes") || n.includes("malhaes")) return "couto";
     if (n.includes("datas")) return "datas";
     if (n.includes("gouveia")) return "gouveia";
     if (n.includes("monjolos")) return "monjolos";
-    if (n.includes("são gonçalo") || n.includes("sgrp")) return "sgrp";
+    if (n.includes("goncalo") || n.includes("sgrp") || n.includes("preto")) return "sgrp";
     return n;
 }
 
@@ -279,7 +272,7 @@ function normalizarCidade(nome) {
 function abrirTelaJudicial() {
     const modalJudicial = document.getElementById('modalJudicialModerno');
     if (!modalJudicial) return;
-    
+
     modalJudicial.style.display = 'flex';
     modalJudicial.innerHTML = `
         <style>
@@ -309,11 +302,11 @@ function abrirTelaJudicial() {
 
         <div class="modal-content-judicial" style="width: 98%; max-width: 1600px; background: white; padding: 15px; border-radius: 8px; position: relative; height: 95vh; overflow: hidden; display: flex; flex-direction: column;">
             <span onclick="this.closest('#modalJudicialModerno').style.display='none'" style="position:absolute; right:15px; top:10px; cursor:pointer; font-size:25px; color:#FF0000; z-index:101;">&times;</span>
-            
+
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; padding-right: 30px;">
                 <div style="display: flex; gap: 8px; flex: 1;">
                     <input type="text" id="inputPesquisaJudicial" oninput="paginaAtual=1; carregarDadosJudiciaisNaTabelaReal('judicial')" placeholder="Pesquisar..." style="padding: 8px; width: 220px; border: 1px solid #ddd; border-radius: 4px;">
-                    
+
                     <select id="filtroTela" onchange="paginaAtual=1; carregarDadosJudiciaisNaTabelaReal('judicial')" style="padding: 8px; border-radius: 4px; border: 1px solid #0984e3; background: #e3f2fd; color: #0984e3; font-weight: bold;">
                         <option value="judicial"> Ordenados por Município</option>
                         <option value="judicial_respondidos">🟢 Respondidos</option>
@@ -367,7 +360,7 @@ function abrirTelaJudicial() {
 function abrirTelaNaoJudicial() {
     const modalNJ = document.getElementById('modalNaoJudicialModerno');
     if (!modalNJ) return;
-    
+
     paginaAtual = 1;
     modalNJ.style.display = 'flex';
     modalNJ.innerHTML = `
@@ -412,25 +405,6 @@ function abrirTelaNaoJudicial() {
     // CORREÇÃO AQUI
     carregarDadosJudiciaisNaTabelaReal('judicial_nao_geral');
 }
-// Função específica para fechar sem dar refresh na página
-function fecharModalNaoJudicial() {
-    const modal = document.getElementById('modalNaoJudicial');
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto'; // Devolve o scroll ao fundo
-    }
-}
-
-// Função para fechar específica
-function fecharModalNaoJudicial() {
-    const modal = document.getElementById('modalNaoJudicial');
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto';
-    }
-}
-
-
 function abrirTelaAdvogada() {
     fecharModal();
     const modalJudicial = document.getElementById('modalJudicialModerno');
@@ -486,83 +460,11 @@ function carregarDadosJudiciaisNaTabelaReal(tipo) {
     if (tipo === 'judicial_nao_geral') {
         idInput = 'inputPesquisaNJ'; idFiltroCid = 'filtroCidadeNJ'; colecaoAtiva = "judicial_nao_geral";
     } else if (tipo === 'advogada') {
-        idInput = 'inputPesquisaAdvogada'; idFiltroCid = 'filtroCidadeAdvogada'; colecaoAtiva = "judicial_advogada";
-    } else {
-        idInput = 'inputPesquisaJudicial'; idFiltroCid = 'filtroCidade'; colecaoAtiva = document.getElementById('filtroTela')?.value || "judicial";
-    }
-    
-    const termo = document.getElementById(idInput)?.value.toLowerCase() || "";
-    let filtroCidRaw = document.getElementById(idFiltroCid)?.value || "TODOS";
-    
-    const mapaCidades = { "sgrp": "São Gonçalo do Rio Preto", "couto": "Couto de Magalhães", "datas": "Datas", "gouveia": "Gouveia", "monjolos": "Monjolos", "felicio": "Felício dos Santos" };
-    const cidadeFiltroDesejada = mapaCidades[filtroCidRaw] || filtroCidRaw;
-
-    // 🌟 MÁGICA DA BUSCA HÍBRIDA:
-    // Se o filtro selecionado for Periódicos ou Protetivas, o sistema vai buscar 
-    // TANTO na coleção principal (novos registros) QUANTO na coleção antiga (dados importados)
-    let listasParaConsultar = [colecaoAtiva];
-    if (colecaoAtiva === 'judicial_periodicos' || colecaoAtiva === 'judicial_protetivas') {
-        listasParaConsultar.push('judicial'); // Adiciona a coleção principal na varredura
-    }
-
-    let todosDadosCombinados = {};
-
-    // Criamos ouvintes em tempo real para as coleções necessárias
-    listasParaConsultar.forEach(nomeColecao => {
-        db.collection(nomeColecao).onSnapshot((snapshot) => {
-            snapshot.forEach(doc => {
-                const d = doc.data();
-                const historico = d.historico_evolucao || [];
-                const nome = (d.nome || d.nomeUsuario || "").toLowerCase();
-                const proc = (d.processo || d.numeroOficio || "").toLowerCase();
-
-                // Identifica a cidade tratando acentuações e maiúsculas/minúsculas
-                const municipioBancoRaw = d.municipio || d["Município"] || d["Municípío"] || d.cidade || "";
-                const municipioBancoNormalizado = normalizarCidade(municipioBancoRaw);
-                const filtroCidadeNormalizado = normalizarCidade(cidadeFiltroDesejada);
-
-                // Se estamos buscando na lista principal 'judicial', validamos se o processo realmente pertence à aba filtrada
-                if (nomeColecao === 'judicial') {
-                    if (colecaoAtiva === 'judicial_periodicos' && !historico.some(h => String(h.status).toLowerCase() === 'periodico')) {
-                        return;
-                    }
-                    if (colecaoAtiva === 'judicial_protetivas' && !historico.some(h => String(h.status).toLowerCase() === 'protetiva')) {
-                        return;
-                    }
-                }
-
-                // Aplica o filtro de Cidade de forma idêntica ao oficial
-                let atendeFiltroCidade = (filtroCidRaw === "TODOS") || 
-                                         (filtroCidRaw === "PRAZO_CRITICO" && historico.some(h => verificarAlertaPrazo(h.data_proxima_resposta, tipo))) || 
-                                         (municipioBancoNormalizado === filtroCidadeNormalizado);
-
-                // Aplica a busca por termo (Nome ou Número)
-                if (atendeFiltroCidade && (nome.includes(termo) || proc.includes(termo))) {
-                    // Armazena usando o ID do documento para evitar qualquer duplicidade na tela
-                    todosDadosCombinados[doc.id] = { id: doc.id, ...d };
-                }
-            });
-
-            // Converte o objeto de volta para array, ordena por modificação recente e renderiza na tela
-            let arrayFinalParaExibir = Object.values(todosDadosCombinados);
-            arrayFinalParaExibir.sort((a, b) => new Date(b.data_ultima_modificacao) - new Date(a.data_ultima_modificacao));
-            
-            dadosFiltradosGlobal = arrayFinalParaExibir;
-            renderizarTabelaPaginada(tipo);
-        });
-    });
-}
-
-function carregarDadosJudiciaisNaTabelaReal(tipo) {
-    let idInput, idFiltroCid, colecaoAtiva;
-    if (tipo === 'judicial_nao_geral') {
-        idInput = 'inputPesquisaNJ'; idFiltroCid = 'filtroCidadeNJ'; colecaoAtiva = "judicial_nao_geral";
-    } else if (tipo === 'advogada') {
         idInput = 'inputPesquisaAdvogada'; idFiltroCid = 'filtroCidadeAdvogada'; colecaoAtiva = "judicial_advogada"; // Correção cirúrgica do ID do input
     } else {
         idInput = 'inputPesquisaJudicial'; idFiltroCid = 'filtroCidade'; colecaoAtiva = document.getElementById('filtroTela')?.value || "judicial";
     }
-    
+
     const termo = document.getElementById(idInput)?.value.toLowerCase() || "";
     let filtroCidRaw = document.getElementById(idFiltroCid)?.value || "TODOS";
     const mapaCidades = { "sgrp": "São Gonçalo do Rio Preto", "couto": "Couto de Magalhães", "datas": "Datas", "gouveia": "Gouveia", "monjolos": "Monjolos", "felicio": "Felício dos Santos" };
@@ -577,8 +479,8 @@ function carregarDadosJudiciaisNaTabelaReal(tipo) {
             const nome = (d.nome || d.nomeUsuario || "").toLowerCase();
             const proc = (d.processo || d.numeroOficio || "").toLowerCase();
 
-            let atendeFiltroCidade = (filtroCidRaw === "TODOS") || 
-                                     (filtroCidRaw === "PRAZO_CRITICO" && historico.some(h => verificarAlertaPrazo(h.data_proxima_resposta, tipo))) || 
+            let atendeFiltroCidade = (filtroCidRaw === "TODOS") ||
+                                     (filtroCidRaw === "PRAZO_CRITICO" && historico.some(h => verificarAlertaPrazo(h.data_proxima_resposta, tipo))) ||
                                      (cidBanco === filtroNorm);
 
             if (atendeFiltroCidade && (nome.includes(termo) || proc.includes(termo))) {
@@ -588,7 +490,7 @@ function carregarDadosJudiciaisNaTabelaReal(tipo) {
 
         // Ordenação global simplificada
         todosDados.sort((a, b) => new Date(b.data_ultima_modificacao) - new Date(a.data_ultima_modificacao));
-        
+
         dadosFiltradosGlobal = todosDados;
         renderizarTabelaPaginada(tipo);
     });
@@ -599,7 +501,7 @@ function renderizarTabelaPaginada(tipo) {
     let idInfoPagina = 'infoPagina';
     let idBtnAnterior = 'btnAnterior';
     let idBtnProximo = 'btnProximo';
-    
+
     if (tipo === 'judicial_nao_geral') {
         idTabela = 'corpoTabelaNaoJudicial';
         idInfoPagina = 'infoPaginaNJ';
@@ -623,7 +525,7 @@ function renderizarTabelaPaginada(tipo) {
     const modoCriticoAtivo = filtroCidElem && filtroCidElem.value === "PRAZO_CRITICO";
 
     corpo.innerHTML = '';
-    
+
     dadosExibir.forEach((d, index) => {
         const historicoRaw = d.historico_evolucao || [];
         const historico = [...historicoRaw].sort((a, b) => {
@@ -642,7 +544,7 @@ function renderizarTabelaPaginada(tipo) {
 
         // Regra prioritária: Se estiver no filtro de periódicos, a linha fica amarela
         if (filtroTelaAtivo === 'judicial_periodicos') {
-            corLinha = '#FFFF00'; 
+            corLinha = '#FFFF00';
         } else {
             // Caso contrário, segue a lógica original de verificar o histórico
             if (statusPrincipal.includes("respondido") || historico.some(h => h.status === 'respondido')) corLinha = '#e8f5e9';
@@ -660,19 +562,19 @@ function renderizarTabelaPaginada(tipo) {
                 </button>
             </div>
             <div id="${idScroll}" style="display: flex; flex-direction: column; gap: 6px; max-height: 150px; overflow-y: auto; padding-right: 5px; scrollbar-width: thin; transition: max-height 0.3s ease-out;">`;
-        
+
         if(historico.length > 0) {
-            const historicoParaExibir = modoCriticoAtivo 
+            const historicoParaExibir = modoCriticoAtivo
                 ? historico.filter(h => verificarAlertaPrazo(h.data_proxima_resposta, tipo))
                 : historico;
 
             htmlHist += historicoParaExibir.map(h => {
                 const temAlerta = verificarAlertaPrazo(h.data_proxima_resposta, tipo);
-                let corBox = h.status === 'respondido' ? '#43ec43' : 
-                             (h.status === 'periodico' ? '#FFFF00' : 
-                             (h.status === 'protetiva' ? '#A28AF9' : 
+                let corBox = h.status === 'respondido' ? '#43ec43' :
+                             (h.status === 'periodico' ? '#FFFF00' :
+                             (h.status === 'protetiva' ? '#A28AF9' :
                              (h.status === 'extensao' ? '#74b9ff' : '#f8f9fa')));
-                
+
                 const backgroundStyle = temAlerta ? 'background-color: #ffeaea !important;' : `background: ${corBox};`;
                 const borderStyle = temAlerta ? 'border: 2px solid #d63031 !important;' : 'border: 1px solid rgba(0,0,0,0.05);';
                 const textStyle = temAlerta ? 'color: #d63031; font-weight: bold;' : '';
@@ -686,7 +588,7 @@ function renderizarTabelaPaginada(tipo) {
                         </div>
                         <div style="margin-bottom: 2px;"><strong>Última Resposta:</strong> ${h.resposta || '-'}</div>
                         <div style="margin-bottom: 2px;">
-                            <strong>Próxima Resposta:</strong> 
+                            <strong>Próxima Resposta:</strong>
                             <span style="${textStyle}">${h.data_proxima_resposta || '-'}</span>
                         </div>
                         <div style="font-style: italic; color: #555; word-wrap: break-word;"><strong>Obs:</strong> ${h.obs || '-'}</div>
@@ -721,7 +623,7 @@ function renderizarTabelaPaginada(tipo) {
             </tr>
         `;
     });
-    
+
     const infoPagElem = document.getElementById(idInfoPagina);
     if (infoPagElem) infoPagElem.innerText = `Página ${paginaAtual} de ${totalPaginas}`;
 }
@@ -732,7 +634,7 @@ window.solicitarExclusaoModal = (id, colecao, nomeUsuario, tipoAtual) => {
 
     const dialog = document.createElement('dialog');
     dialog.id = 'dialogConfirmacaoExcluir';
-    
+
     dialog.style.border = 'none';
     dialog.style.borderRadius = '8px';
     dialog.style.padding = '24px';
@@ -783,9 +685,9 @@ window.solicitarExclusaoModal = (id, colecao, nomeUsuario, tipoAtual) => {
         try {
             document.getElementById('btnConfirmarExclusao').innerText = "Excluindo...";
             document.getElementById('btnConfirmarExclusao').disabled = true;
-            
+
             await db.collection(colecao).doc(id).delete();
-            
+
             dialog.close();
             dialog.remove();
 
@@ -808,250 +710,11 @@ window.solicitarExclusaoModal = (id, colecao, nomeUsuario, tipoAtual) => {
     };
 };
 
-// --- FUNÇÃO DO MODAL DE EXCLUSÃO PROFISSIONAL COM ATUALIZAÇÃO EM TEMPO REAL ---
-window.solicitarExclusaoModal = (id, colecao, nomeUsuario, tipoAtual) => {
-    const existente = document.getElementById('dialogConfirmacaoExcluir');
-    if (existente) existente.remove();
-
-    const dialog = document.createElement('dialog');
-    dialog.id = 'dialogConfirmacaoExcluir';
-    
-    dialog.style.border = 'none';
-    dialog.style.borderRadius = '8px';
-    dialog.style.padding = '24px';
-    dialog.style.maxWidth = '420px';
-    dialog.style.width = '90%';
-    dialog.style.boxShadow = '0 10px 30px rgba(0,0,0,0.4)';
-    dialog.style.textAlign = 'center';
-    dialog.style.fontFamily = 'sans-serif';
-    dialog.style.position = 'fixed';
-    dialog.style.top = '50%';
-    dialog.style.left = '50%';
-    dialog.style.transform = 'translate(-50%, -50%)';
-    dialog.style.margin = '0';
-
-    dialog.innerHTML = `
-        <div style="color: #d63031; font-size: 44px; margin-bottom: 14px;">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-        </div>
-        <h3 style="margin: 0 0 10px 0; color: #2d3436; font-size: 19px; font-weight: bold;">Confirmar Exclusão</h3>
-        <p style="margin: 0 0 24px 0; color: #636e72; font-size: 14px; line-height: 1.5; text-align: center;">
-            Tem certeza que deseja excluir permanentemente o processo de <strong>${nomeUsuario}</strong>?<br>Esta ação removerá o registro do banco de dados e não poderá ser desfeita.
-        </p>
-        <div style="display: flex; gap: 12px; justify-content: center;">
-            <button id="btnCancelarExclusao" style="background: #dfe6e9; color: #2d3436; border: none; padding: 10px 22px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px;">
-                Cancelar
-            </button>
-            <button id="btnConfirmarExclusao" style="background: #d63031; color: white; border: none; padding: 10px 22px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px;">
-                Excluir Registro
-            </button>
-        </div>
-        <style>
-            dialog::backdrop {
-                background: rgba(0, 0, 0, 0.6) !important;
-                backdrop-filter: blur(2px);
-            }
-        </style>
-    `;
-
-    document.body.appendChild(dialog);
-    dialog.showModal();
-
-    document.getElementById('btnCancelarExclusao').onclick = () => {
-        dialog.close();
-        dialog.remove();
-    };
-
-    document.getElementById('btnConfirmarExclusao').onclick = async () => {
-        try {
-            document.getElementById('btnConfirmarExclusao').innerText = "Excluindo...";
-            document.getElementById('btnConfirmarExclusao').disabled = true;
-            
-            // Remove o documento do Firebase
-            await db.collection(colecao).doc(id).delete();
-            
-            dialog.close();
-            dialog.remove();
-
-            // 🌟 ATUALIZAÇÃO EM TEMPO REAL: Recarrega os dados imediatamente na tabela ativa
-            if (typeof carregarDadosJudiciaisNaTabelaReal === "function") {
-                carregarDadosJudiciaisNaTabelaReal(tipoAtual);
-            }
-
-            if (typeof mostrarToast === "function") {
-                mostrarToast("Processo removido com sucesso!");
-            } else {
-                alert("Processo removido com sucesso!");
-            }
-        } catch (e) {
-            console.error("Erro ao deletar do Firebase:", e);
-            alert("Erro ao tentar excluir o processo. Verifique a conexão.");
-            dialog.close();
-            dialog.remove();
-        }
-    };
-};
-
-// --- FUNÇÃO DO MODAL DE EXCLUSÃO PROFISSIONAL TOP-LAYER (IMPEDE FICAR OCULTO) ---
-window.solicitarExclusaoModal = (id, colecao, nomeUsuario) => {
-    const existente = document.getElementById('dialogConfirmacaoExcluir');
-    if (existente) existente.remove();
-
-    const dialog = document.createElement('dialog');
-    dialog.id = 'dialogConfirmacaoExcluir';
-    
-    // Estilização limpa e profissional centralizada por cima de tudo
-    dialog.style.border = 'none';
-    dialog.style.borderRadius = '8px';
-    dialog.style.padding = '24px';
-    dialog.style.maxWidth = '420px';
-    dialog.style.width = '90%';
-    dialog.style.boxShadow = '0 10px 30px rgba(0,0,0,0.4)';
-    dialog.style.textAlign = 'center';
-    dialog.style.fontFamily = 'sans-serif';
-    dialog.style.position = 'fixed';
-    dialog.style.top = '50%';
-    dialog.style.left = '50%';
-    dialog.style.transform = 'translate(-50%, -50%)';
-    dialog.style.margin = '0';
-
-    dialog.innerHTML = `
-        <div style="color: #d63031; font-size: 44px; margin-bottom: 14px;">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-        </div>
-        <h3 style="margin: 0 0 10px 0; color: #2d3436; font-size: 19px; font-weight: bold;">Confirmar Exclusão</h3>
-        <p style="margin: 0 0 24px 0; color: #636e72; font-size: 14px; line-height: 1.5; text-align: center;">
-            Tem certeza que deseja excluir permanentemente o processo de <strong>${nomeUsuario}</strong>?<br>Esta ação removerá o registro do banco de dados e não poderá ser desfeita.
-        </p>
-        <div style="display: flex; gap: 12px; justify-content: center;">
-            <button id="btnCancelarExclusao" style="background: #dfe6e9; color: #2d3436; border: none; padding: 10px 22px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; transition: background 0.2s;">
-                Cancelar
-            </button>
-            <button id="btnConfirmarExclusao" style="background: #d63031; color: white; border: none; padding: 10px 22px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px; transition: background 0.2s;">
-                Excluir Registro
-            </button>
-        </div>
-        <style>
-            dialog::backdrop {
-                background: rgba(0, 0, 0, 0.6) !important;
-                backdrop-filter: blur(2px);
-            }
-        </style>
-    `;
-
-    document.body.appendChild(dialog);
-    dialog.showModal();
-
-    document.getElementById('btnCancelarExclusao').onclick = () => {
-        dialog.close();
-        dialog.remove();
-    };
-
-    document.getElementById('btnConfirmarExclusao').onclick = async () => {
-        try {
-            document.getElementById('btnConfirmarExclusao').innerText = "Excluindo...";
-            document.getElementById('btnConfirmarExclusao').disabled = true;
-            
-            await db.collection(colecao).doc(id).delete();
-            
-            dialog.close();
-            dialog.remove();
-
-            if (typeof mostrarToast === "function") {
-                mostrarToast("Processo removido com sucesso!");
-            } else {
-                alert("Processo removido com sucesso!");
-            }
-        } catch (e) {
-            console.error("Erro ao deletar do Firebase:", e);
-            alert("Erro ao tentar excluir o processo. Verifique a conexão.");
-            dialog.close();
-            dialog.remove();
-        }
-    };
-};
-
-
-// --- FUNÇÃO DE EXCLUSÃO PROFISSIONAL CENTRALIZADA (SEM ALTERAR O VISUAL) ---
-window.solicitarExclusaoModal = (id, colecao, nomeUsuario) => {
-    // Remove qualquer dialog duplicado para não acumular lixo na memória
-    const existente = document.getElementById('dialogConfirmacaoExcluir');
-    if (existente) existente.remove();
-
-    // Cria o elemento dialog nativo que ignora qualquer barreira de z-index do layout
-    const dialog = document.createElement('dialog');
-    dialog.id = 'dialogConfirmacaoExcluir';
-    
-    // Estilização minimalista e profissional centralizada
-    dialog.style.border = 'none';
-    dialog.style.borderRadius = '8px';
-    dialog.style.padding = '24px';
-    dialog.style.maxWidth = '450px';
-    dialog.style.width = '90%';
-    dialog.style.boxShadow = '0 4px 20px rgba(0,0,0,0.3)';
-    dialog.style.textAlign = 'center';
-    dialog.style.fontFamily = 'sans-serif';
-
-    dialog.innerHTML = `
-        <div style="color: #d63031; font-size: 40px; margin-bottom: 12px;">
-            <i class="fa-solid fa-triangle-exclamation"></i>
-        </div>
-        <h3 style="margin: 0 0 10px 0; color: #2d3436; font-size: 18px; font-weight: bold;">Confirmar Exclusão</h3>
-        <p style="margin: 0 0 24px 0; color: #636e72; font-size: 14px; line-height: 1.5;">
-            Tem certeza que deseja excluir permanentemente o processo de <strong>${nomeUsuario}</strong>?<br>Esta ação não poderá ser desfeita.
-        </p>
-        <div style="display: flex; gap: 12px; justify-content: center;">
-            <button id="btnCancelarExclusao" style="background: #dfe6e9; color: #2d3436; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px;">
-                Cancelar
-            </button>
-            <button id="btnConfirmarExclusao" style="background: #d63031; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 13px;">
-                Excluir Registro
-            </button>
-        </div>
-    `;
-
-    document.body.appendChild(dialog);
-    
-    // Abre como modal nativo do navegador (Garante centralização perfeita sobre toda a aplicação)
-    dialog.showModal();
-
-    // Evento para fechar e remover ao clicar em cancelar
-    document.getElementById('btnCancelarExclusao').onclick = () => {
-        dialog.close();
-        dialog.remove();
-    };
-
-    // Evento para executar a exclusão segura no Firebase
-    document.getElementById('btnConfirmarExclusao').onclick = async () => {
-        try {
-            document.getElementById('btnConfirmarExclusao').innerText = "Excluindo...";
-            document.getElementById('btnConfirmarExclusao').disabled = true;
-            
-            await db.collection(colecao).doc(id).delete();
-            
-            dialog.close();
-            dialog.remove();
-
-            if (typeof mostrarToast === "function") {
-                mostrarToast("Processo removido com sucesso!");
-            } else {
-                alert("Processo removido com sucesso!");
-            }
-        } catch (e) {
-            console.error("Erro ao deletar do Firebase:", e);
-            alert("Erro ao tentar excluir o processo. Verifique a conexão.");
-            dialog.close();
-            dialog.remove();
-        }
-    };
-};
-
-
 // --- FUNÇÃO PARA ABRIR NOVO CADASTRO ---
 window.abrirFormularioNovo = function(colecaoAlvo = 'judicial') {
-    idProcessoEmEdicao = null; 
+    idProcessoEmEdicao = null;
     const modal = document.getElementById('modalCadastroJudicial');
-    
+
     if (!modal) {
         console.error("ERRO: Elemento 'modalCadastroJudicial' não encontrado!");
         return;
@@ -1061,7 +724,7 @@ window.abrirFormularioNovo = function(colecaoAlvo = 'judicial') {
     modal.style.display = 'flex';
     modal.style.alignItems = 'center';
     modal.style.justifyContent = 'center';
-    
+
     // 2. Ajusta a DIV interna para ter scroll igual à tela de exibição
     const cartaoInterno = modal.querySelector('div');
     if (cartaoInterno) {
@@ -1077,48 +740,39 @@ window.abrirFormularioNovo = function(colecaoAlvo = 'judicial') {
     document.getElementById('addRemetente').value = '';
     document.getElementById('addMeio').value = '';
     document.getElementById('addMunicipio').value = 'Couto de Magalhães';
-    
+
     modal.setAttribute('data-colecao', colecaoAlvo);
     document.getElementById('tituloModalCadastro').innerText = " NOVO PROCESSO";
 
     const container = document.getElementById('containerLinhasDatas');
-    container.innerHTML = ''; 
-    adicionarNovaLinhaData(); 
-    
+    container.innerHTML = '';
+    adicionarNovaLinhaData();
+
     // Trava o scroll do fundo (página principal) enquanto cadastra
     document.body.style.overflow = 'hidden';
 };
-// --- FUNÇÃO PARA FECHAR (X e CANCELAR) ---
-window.fecharModalCadastro = function() {
-    const modal = document.getElementById('modalCadastroJudicial');
-    if (modal) {
-        modal.style.display = 'none';
-        document.body.style.overflow = 'auto'; // Devolve o scroll para a página de trás
-    }
-};
-
-window.adicionarNovaLinhaData = (dados = null) => {
+function adicionarNovaLinhaData(dados = null) {
     const container = document.getElementById('containerLinhasDatas');
     const div = document.createElement('div');
     div.className = 'linha-data-entry';
-    
+
     // Estilização ajustada para centralizar proporcionalmente (95% de largura)
     div.style = `
-        background: #f8f9fa; 
-        padding: 25px 20px 20px 20px; 
-        border-radius: 8px; 
-        margin: 15px auto 20px auto; 
+        background: #f8f9fa;
+        padding: 25px 20px 20px 20px;
+        border-radius: 8px;
+        margin: 15px auto 20px auto;
         width: 95%;
-        border: 1px solid #dee2e6; 
-        position: relative; 
-        display: grid; 
+        border: 1px solid #dee2e6;
+        position: relative;
+        display: grid;
         gap: 12px;
         box-shadow: 0 2px 4px rgba(0,0,0,0.05);
         box-sizing: border-box;
     `;
-    
+
     div.innerHTML = `
-        <button onclick="this.parentElement.remove()" 
+        <button onclick="this.parentElement.remove()"
             style="position: absolute; top: 10px; right: 10px; background: #e74c3c; color: white; border: none; border-radius: 50%; width: 22px; height: 22px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 14px; font-weight: bold; z-index: 5; transition: 0.2s;">
             &times;
         </button>
@@ -1166,30 +820,32 @@ window.adicionarNovaLinhaData = (dados = null) => {
         </div>
     `;
     container.appendChild(div);
-};
+    rolarHistoricoParaBaixo();
+}
+window.adicionarNovaLinhaData = adicionarNovaLinhaData;
 
 // --- CONFIGURAÇÃO DA AGENDA ---
 let ANO_VIGENTE_AGENDA = new Date().getFullYear().toString();
 
 let paginaAtualAgenda = 1;
 const itensPorPaginaAgenda = 15;
-let todosDadosAgenda = []; 
+let todosDadosAgenda = [];
 
 function abrirTelaAgenda() {
     fecharModal();
-    const modalBase = document.getElementById('modalJudicialModerno'); 
+    const modalBase = document.getElementById('modalJudicialModerno');
     if (!modalBase) return;
-    
+
     modalBase.style.display = 'flex';
     modalBase.innerHTML = `
         <div class="modal-content-judicial" style="width: 98%; max-width: 1600px; background: white; padding: 15px; border-radius: 8px; position: relative; height: 95vh; display: flex; flex-direction: column;">
             <span onclick="fecharModalJudicial()" style="position:absolute; right:15px; top:10px; cursor:pointer; font-size:25px; color:#FF0000; z-index:101;">&times;</span>
-            
+
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; border-bottom: 2px solid #eee; padding-bottom: 10px;">
-                
-                <div style="width: 100%; text-align: center; display: flex; flex-direction: column; align-items: center;"> 
+
+                <div style="width: 100%; text-align: center; display: flex; flex-direction: column; align-items: center;">
                     <h2 style="margin: 0; color: #2c3e50;"><i class="fa-solid fa-calendar-days"></i> AGENDA ${ANO_VIGENTE_AGENDA}</h2>
-                    
+
                     <div style="display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; justify-content: center; align-items: center;">
                         <span style="font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 4px; background: #3ae43a; color: white;">Realizado</span>
                         <span style="font-size: 11px; font-weight: bold; padding: 4px 10px; border-radius: 4px; background: #95a5a6; color: white;">Desmarcado</span>
@@ -1209,7 +865,7 @@ function abrirTelaAgenda() {
                         </select>
                     </div>
                 </div>
-                
+
                 <div style="display: flex; gap: 10px; align-items: center; position: absolute; right: 60px; top: 20px;">
                     <input type="text" id="inputPesquisaAgenda" oninput="paginaAtualAgenda=1; carregarDadosAgendaReal()" placeholder="Pesquisar..." style="padding: 10px; border-radius: 6px; border: 1px solid #ddd; width: 200px;">
                     <button onclick="abrirNovoCadastroAgenda()" style="background: #2c3e50; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; font-weight: bold;">
@@ -1286,8 +942,8 @@ function carregarDadosAgendaReal() {
     hoje.setHours(0,0,0,0);
     const hojeStr = hoje.toLocaleDateString('pt-BR');
 
-    let filtrados = todosDadosAgenda.filter(d => 
-        (d.evento || "").toLowerCase().includes(termo) || 
+    let filtrados = todosDadosAgenda.filter(d =>
+        (d.evento || "").toLowerCase().includes(termo) ||
         (d.municipio || "").toLowerCase().includes(termo)
     );
 
@@ -1341,12 +997,12 @@ function mudarPaginaAgenda(valor) {
     paginaAtualAgenda += valor;
     carregarDadosAgendaReal();
 }
-//Aviso mensagem de compromisso 
+//Aviso mensagem de compromisso
 
 function verificarCompromissosHoje() {
     const hojeStr = new Date().toLocaleDateString('pt-BR');
     const paraHoje = todosDadosAgenda.filter(d => d.data === hojeStr && (d.status === "Pendente" || !d.status));
-    
+
     if (paraHoje.length > 0) {
         tocarSomAviso();
         setTimeout(() => {
@@ -1459,17 +1115,17 @@ function verificarCompromissosHoje() {
             // 3. Cria a caixa da mensagem centralizada
             const divNotificacao = document.createElement('div');
             divNotificacao.className = 'notificacao-agenda-centro';
-            
+
             // Mapeamento corrigido apontando para d.horario e d.evento com a inclusão dinâmica do município
             const compromissosListaHtml = paraHoje.map(d => {
                 const hora = d.horario || d.Horario || 'Agenda';
                 const desc = d.evento || 'Compromisso sem descrição';
-                
+
                 // Captura o município ou cidade informado no documento do Firestore
                 const cidadeInformada = d.municipio || d.cidade || '';
                 // Se houver uma cidade informada, monta a tag sutil de exibição
                 const htmlCidade = cidadeInformada ? ` <span style="color: #7f8c8d; font-size: 11px; font-weight: normal; font-style: italic;">(${cidadeInformada})</span>` : '';
-                
+
                 return `
                     <div style="display: flex; align-items: center; gap: 10px; background: #fff5eb; border-left: 4px solid #e67e22; padding: 10px 12px; border-radius: 6px; margin-bottom: 6px; box-shadow: 0 1px 3px rgba(0,0,0,0.04); text-align: left;">
                         <span style="background: #e67e22; color: white; padding: 3px 7px; border-radius: 4px; font-weight: bold; font-size: 11px; white-space: nowrap;">${hora}</span>
@@ -1486,7 +1142,7 @@ function verificarCompromissosHoje() {
                 <div class="notificacao-agenda-centro-texto">
                     Você tem <span style="color: #e67e22; font-weight: bold; font-size: 17px;">${paraHoje.length} compromisso(s)</span> para HOJE!
                 </div>
-                
+
                 <div style="flex: 1; overflow-y: auto; max-height: 240px; padding-right: 4px; margin-bottom: 15px; scrollbar-width: thin;">
                     ${compromissosListaHtml}
                 </div>
@@ -1526,7 +1182,7 @@ function tocarSomAviso() {
 function mostrarModalFormAgenda(titulo, dados = null) {
     const modalForm = document.getElementById('modalCadastroJudicial');
     modalForm.style.display = 'flex';
-    
+
     // Converte data DD/MM/AAAA para AAAA-MM-DD para o input type="date"
     let dataFormatada = "";
     if (dados?.data) {
@@ -1538,7 +1194,7 @@ function mostrarModalFormAgenda(titulo, dados = null) {
         <div style="background: white; width: 450px; border-radius: 12px; padding: 25px; position: relative; box-shadow: 0 10px 30px rgba(0,0,0,0.3);">
             <span onclick="fecharModalCadastro()" style="position:absolute; right:15px; top:10px; cursor:pointer; font-size:25px; color:#999;">&times;</span>
             <h3 style="margin-top:0; color: #2c3e50; border-bottom: 2px solid #eee; padding-bottom: 10px; text-align: center;">${titulo}</h3>
-            
+
             <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 15px;">
                 <label style="font-size: 11px; font-weight: bold; color: #7f8c8d;">STATUS DO EVENTO</label>
                 <select id="f_ag_status" style="padding: 10px; border-radius: 6px; border: 1px solid #ddd; outline: none;">
@@ -1551,7 +1207,7 @@ function mostrarModalFormAgenda(titulo, dados = null) {
 
                 <input type="text" id="f_ag_evento" placeholder="Evento / Reunião" value="${dados?.evento || ''}" style="padding: 10px; border-radius: 6px; border: 1px solid #ddd; outline: none;">
                 <input type="text" id="f_ag_municipio" placeholder="Município" value="${dados?.municipio || ''}" style="padding: 10px; border-radius: 6px; border: 1px solid #ddd; outline: none;">
-                
+
                 <div style="display: flex; gap: 10px;">
                     <div style="flex:1;">
                         <label style="font-size: 10px; font-weight: bold; color: #7f8c8d;">DATA</label>
@@ -1565,7 +1221,7 @@ function mostrarModalFormAgenda(titulo, dados = null) {
 
                 <input type="text" id="f_ag_equipe" placeholder="Equipe Responsável" value="${dados?.equipe || ''}" style="padding: 10px; border-radius: 6px; border: 1px solid #ddd; outline: none;">
                 <textarea id="f_ag_obs" placeholder="Observações" style="padding: 10px; border-radius: 6px; border: 1px solid #ddd; height: 70px; resize: none; outline: none;">${dados?.observacoes || ''}</textarea>
-                
+
                 <div style="display: flex; gap: 10px; margin-top: 10px;">
                     <button onclick="salvarAgendaFirebase()" style="flex: 2; background: #2c3e50; color: white; padding: 14px; border: none; border-radius: 8px; font-weight: bold; cursor: pointer;">
                         <i class="fa-solid fa-floppy-disk"></i> SALVAR
@@ -1617,22 +1273,22 @@ async function salvarAgendaFirebase() {
             mostrarNotificacaoSucesso("Novo compromisso cadastrado!");
         }
         fecharModalCadastro();
-    } catch (e) { 
-        mostrarToast("Erro ao salvar.", "#e74c3c"); 
+    } catch (e) {
+        mostrarToast("Erro ao salvar.", "#e74c3c");
     }
 }
 
 async function excluirAgendaFirebase() {
     confirmarAcaoPersonalizada(
-        "Excluir Compromisso?", 
-        "Deseja mesmo excluir este compromisso permanentemente do sistema?", 
+        "Excluir Compromisso?",
+        "Deseja mesmo excluir este compromisso permanentemente do sistema?",
         async () => {
             try {
                 await db.collection("agenda_geral").doc(idAgendaEdicao).delete();
                 mostrarNotificacaoSucesso("Compromisso removido com sucesso!");
                 fecharModalCadastro();
-            } catch (e) { 
-                mostrarToast("Erro ao excluir.", "#e74c3c"); 
+            } catch (e) {
+                mostrarToast("Erro ao excluir.", "#e74c3c");
             }
         }
     );
@@ -1640,10 +1296,10 @@ async function excluirAgendaFirebase() {
 
 let idAgendaEdicao = null;
 function abrirNovoCadastroAgenda() { idAgendaEdicao = null; mostrarModalFormAgenda("NOVO EVENTO"); }
-async function prepararEdicaoAgenda(id) { 
-    idAgendaEdicao = id; 
-    const doc = await db.collection("agenda_geral").doc(id).get(); 
-    if (doc.exists) mostrarModalFormAgenda("EDITAR EVENTO", doc.data()); 
+async function prepararEdicaoAgenda(id) {
+    idAgendaEdicao = id;
+    const doc = await db.collection("agenda_geral").doc(id).get();
+    if (doc.exists) mostrarModalFormAgenda("EDITAR EVENTO", doc.data());
 }
 
 
@@ -1671,9 +1327,9 @@ function mostrarToast(mensagem, cor = "#2d3436") {
 window.salvarNoFirebase = async () => {
     const modal = document.getElementById('modalCadastroJudicial');
     if (!modal) return;
-    
+
     const colecaoOrigem = modal.getAttribute('data-colecao') || 'judicial';
-    
+
     const nome = document.getElementById('addNome').value.trim();
     const processo = document.getElementById('addProcesso').value.trim();
     const remetente = document.getElementById('addRemetente').value.trim();
@@ -1706,8 +1362,8 @@ window.salvarNoFirebase = async () => {
     });
 
     // Determina o status com base na ÚLTIMA movimentação lançada
-    let statusFinalDoProcesso = "judicial"; 
-    
+    let statusFinalDoProcesso = "judicial";
+
     if (historico.length > 0) {
         const historicoOrdenadoTemp = [...historico].sort((a, b) => {
             const conv = (s) => {
@@ -1717,7 +1373,7 @@ window.salvarNoFirebase = async () => {
             };
             return conv(a.data_rec) - conv(b.data_rec);
         });
-        
+
         const ultimaMovimentacaoLancada = historicoOrdenadoTemp[historicoOrdenadoTemp.length - 1];
         const statusUltimaLinha = ultimaMovimentacaoLancada.status;
 
@@ -1737,14 +1393,14 @@ window.salvarNoFirebase = async () => {
         remetente: remetente,
         meio_recebimento: meio,
         municipio: municipio,
-        status: statusFinalDoProcesso, 
+        status: statusFinalDoProcesso,
         historico_evolucao: historico,
         data_ultima_modificacao: new Date().toISOString()
     };
 
     try {
         let colecaoDestinoFinal = colecaoOrigem;
-        
+
         if (colecaoOrigem !== 'judicial_nao_geral' && colecaoOrigem !== 'judicial_advogada') {
             colecaoDestinoFinal = statusFinalDoProcesso;
         }
@@ -1762,7 +1418,7 @@ window.salvarNoFirebase = async () => {
             await db.collection(colecaoDestinoFinal).add(dados);
             mostrarToast("Novo processo cadastrado com sucesso!");
         }
-        
+
         fecharModalCadastro();
     } catch (e) {
         console.error("Erro ao salvar dados no Firebase:", e);
@@ -1902,18 +1558,6 @@ window.mudarPagina = function(direcao, tipo) {
     }
 };
 
-// Esta função garante que o "couto" do select bata com "Couto de Magalhães" do banco
-function normalizarCidade(cidade) {
-    if (!cidade) return "";
-    const c = cidade.toLowerCase().trim();
-    if (c.includes("couto")) return "couto";
-    if (c.includes("datas")) return "datas";
-    if (c.includes("gouveia")) return "gouveia";
-    if (c.includes("monjolos")) return "monjolos";
-    if (c.includes("gonçalo") || c.includes("sgrp") || c.includes("preto")) return "sgrp";
-    return c;
-}
-
 // Configuração de expandir o processo quando está sendo usado individual
 window.toggleExpandirHistorico = function(idScroll, botao) {
     const div = document.getElementById(idScroll);
@@ -1935,7 +1579,7 @@ function verificarAlertaPrazo(dataString, tipo) {
 
     const partes = dataString.split('/');
     if (partes.length !== 3) return false;
-    
+
     const dataProcesso = new Date(partes[2], partes[1] - 1, partes[0]);
     dataProcesso.setHours(0, 0, 0, 0);
 
@@ -1945,7 +1589,7 @@ function verificarAlertaPrazo(dataString, tipo) {
     // --- NOVA LÓGICA DE FILTRO POR ANO ---
     // Se a data do processo for de um ano anterior ao ano atual, ignoramos (não é mais crítico)
     if (dataProcesso.getFullYear() < hoje.getFullYear()) {
-        return false; 
+        return false;
     }
 
     // Se a data já passou (mas é deste ano), continua sendo alerta (atrasado)
@@ -1957,7 +1601,7 @@ function verificarAlertaPrazo(dataString, tipo) {
     while (diasUteisContados < 14) {
         dataLimite.setDate(dataLimite.getDate() + 1);
         let diaSemana = dataLimite.getDay();
-        if (diaSemana !== 0 && diaSemana !== 6) { 
+        if (diaSemana !== 0 && diaSemana !== 6) {
             diasUteisContados++;
         }
     }
@@ -2041,8 +1685,8 @@ function copiarRelatorioTeams() {
 // VARIÁVEIS GLOBAIS RMA
 // ==========================================
 let dataAtualSistema = new Date();
-let ANO_VIGENTE_RMA = dataAtualSistema.getFullYear().toString(); 
-let CIDADE_ATUAL_RMA = "COUTO DE MAGALHÃES"; 
+let ANO_VIGENTE_RMA = dataAtualSistema.getFullYear().toString();
+let CIDADE_ATUAL_RMA = "COUTO DE MAGALHÃES";
 let todosDadosRma = [];
 let idRmaEdicao = null;
 const MUNICIPIOS_LISTA = ["COUTO DE MAGALHÃES", "DATAS", "GOUVEIA", "MONJOLOS", "SÃO GONÇALO DO RIO PRETO"];
@@ -2109,8 +1753,8 @@ styleRma.innerHTML = `
         font-size: 20px !important; color: #f30606 !important; cursor: pointer !important;
         transition: all 0.2s; display: flex; align-items: center; justify-content: center;
     }
-    
-  
+
+
 
     .faixa-alerta-rma {
         background: #fff5f5; border: 1px solid #feb2b2; color: #c53030;
@@ -2129,12 +1773,12 @@ window.fecharRmaFormulario = () => { document.getElementById('modalRmaFormulario
 function aplicarEstiloPulsoRma(ativar) {
     // Lista de textos que devem disparar o pulso no elemento pai
     const textosAlvo = ["Controle RMA", "Controle de Envio"];
-    
+
     const todosElementos = document.querySelectorAll('div, a, button, span');
     todosElementos.forEach(el => {
         const txt = el.innerText ? el.innerText.trim() : "";
         if (textosAlvo.includes(txt)) {
-            const container = el.closest('div') || el.parentElement; 
+            const container = el.closest('div') || el.parentElement;
             if (container) {
                 if (ativar) {
                     container.classList.add("alerta-vencido-btn");
@@ -2155,7 +1799,7 @@ window.verificarPendenciasRma = function() {
     const agora = new Date();
     const diaAtual = agora.getDate();
     const mesesNomes = ["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
-    
+
     let indexMesAnterior = agora.getMonth() - 1;
     let anoReferencia = agora.getFullYear();
     if (indexMesAnterior < 0) { indexMesAnterior = 11; anoReferencia--; }
@@ -2178,7 +1822,7 @@ window.verificarPendenciasRma = function() {
 
           let pendentes = MUNICIPIOS_LISTA.filter(c => !cidadesComRegistro.includes(c));
           const temPendenciaGlobal = pendentes.length > 0 && diaAtual > 7;
-          
+
           // Aplica pulso tanto no card da Home quanto no botão de menu
           aplicarEstiloPulsoRma(temPendenciaGlobal);
 
@@ -2198,9 +1842,9 @@ window.verificarPendenciasRma = function() {
 // TELA PRINCIPAL RMA
 // ==========================================
 window.abrirTelaRma = function() {
-    const modalBase = document.getElementById('modalRmaPrincipal'); 
+    const modalBase = document.getElementById('modalRmaPrincipal');
     if (!modalBase) return;
-    
+
     const anoAtual = new Date().getFullYear();
     const proximoAno = anoAtual + 1;
     let optionsAno = `<option value="${anoAtual}" ${ANO_VIGENTE_RMA == anoAtual ? 'selected' : ''}>${anoAtual}</option>`;
@@ -2211,8 +1855,8 @@ window.abrirTelaRma = function() {
     modalBase.style.display = 'flex';
     modalBase.innerHTML = `
         <div style="width: 98%; max-width: 1500px; background: white; padding: 25px; border-radius: 12px; position: relative; height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
-            
-            <div class="btn-fechar-rma-fino" onclick="fecharRmaPrincipal()" 
+
+            <div class="btn-fechar-rma-fino" onclick="fecharRmaPrincipal()"
                  style="position: absolute; top: 12px; right: 12px; cursor: pointer; font-size: 20px; color: #e74c3c; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; z-index: 100; transition: all 0.2s;">
                  <i class="fa-solid fa-xmark"></i>
             </div>
@@ -2224,10 +1868,10 @@ window.abrirTelaRma = function() {
                         <h2 style="margin: 0; color: #2c3e50; font-size: 22px; letter-spacing: -0.5px;">RMA</h2>
                         <select id="selectAnoRma" onchange="mudarAnoRma(this.value)" style="padding: 2px 5px; border-radius: 5px; border: 1px solid #ccc; font-weight: bold; font-size: 14px; cursor:pointer;">${optionsAno}</select>
                     </div>
-                    
+
                     <div style="display: flex; background: #f1f2f6; padding: 4px; border-radius: 8px; gap: 2px;">
                         ${MUNICIPIOS_LISTA.map(cidade => `
-                            <button onclick="filtrarCidadeRma('${cidade}')" 
+                            <button onclick="filtrarCidadeRma('${cidade}')"
                                 style="padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; transition: all 0.2s;
                                 ${CIDADE_ATUAL_RMA === cidade ? 'background: #2c3e50; color: white;' : 'background: transparent; color: #7f8c8d;'}">
                                 ${cidade}
@@ -2283,19 +1927,19 @@ function renderizarTabelaRma() {
     const corpo = document.getElementById('corpoTabelaRmaExclusivo');
     if(!corpo) return;
     corpo.innerHTML = '';
-    
+
     if(todosDadosRma.length === 0) {
         corpo.innerHTML = `<tr><td colspan="6" style="padding: 40px; text-align: center; color: #95a5a6;">Nenhum registro encontrado para esta cidade em ${ANO_VIGENTE_RMA}.</td></tr>`;
         return;
     }
 
     todosDadosRma.forEach(d => {
-        const dataDisplay = (d.data_envio === "00/00/00" || d.data_envio === "00/00/0000") 
-            ? `<span style="color: #e74c3c; font-weight: bold;">${d.data_envio}</span>` 
+        const dataDisplay = (d.data_envio === "00/00/00" || d.data_envio === "00/00/0000")
+            ? `<span style="color: #e74c3c; font-weight: bold;">${d.data_envio}</span>`
             : (d.data_envio || '-');
 
-        const linkDoc = d.link_arquivo 
-            ? `<a href="${d.link_arquivo}" target="_blank" style="color: #0e7ceb; font-size: 18px;"><i class="fa-brands fa-google-drive"></i></a>` 
+        const linkDoc = d.link_arquivo
+            ? `<a href="${d.link_arquivo}" target="_blank" style="color: #0e7ceb; font-size: 18px;"><i class="fa-brands fa-google-drive"></i></a>`
             : '-';
 
         corpo.innerHTML += `
@@ -2321,10 +1965,10 @@ window.mudarAnoRma = (ano) => { ANO_VIGENTE_RMA = ano; escutarRmaRealTime(); };
 // FORMULÁRIO DE CADASTRO/EDIÇÃO EXCLUSIVO
 // ==========================================
 window.abrirNovoCadastroRma = () => { idRmaEdicao = null; mostrarModalFormRma(`NOVO RMA - ${CIDADE_ATUAL_RMA}`); };
-window.prepararEdicaoRma = async (id) => { 
-    idRmaEdicao = id; 
-    const doc = await db.collection("controle_rma").doc(id).get(); 
-    if (doc.exists) mostrarModalFormRma("EDITAR REGISTRO", doc.data()); 
+window.prepararEdicaoRma = async (id) => {
+    idRmaEdicao = id;
+    const doc = await db.collection("controle_rma").doc(id).get();
+    if (doc.exists) mostrarModalFormRma("EDITAR REGISTRO", doc.data());
 };
 
 function mostrarModalFormRma(titulo, dados = null) {
@@ -2336,13 +1980,13 @@ function mostrarModalFormRma(titulo, dados = null) {
         <div style="background: white; width: 400px; border-radius: 12px; padding: 25px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
             <span onclick="fecharRmaFormulario()" class="btn-fechar-rma-fino" style="position:absolute; right:20px; top:15px;"><i class="fa-solid fa-xmark"></i></span>
             <h3 style="text-align:center; margin-top:0; color: #2c3e50; border-bottom: 2px solid #f1f2f6; padding-bottom: 10px;">${titulo}</h3>
-            
+
             <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
                 <input type="hidden" id="f_rma_municipio" value="${dados?.municipio || CIDADE_ATUAL_RMA}">
-                
+
                 <label style="font-size:11px; font-weight:bold; color: #7f8c8d;">MÊS DE REFERÊNCIA</label>
                 <select id="f_rma_mes" style="padding: 10px; border-radius: 8px; border:1px solid #ddd; outline: none;">
-                    ${["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"].map(m => 
+                    ${["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"].map(m =>
                         `<option value="${m}" ${dados?.mes === m ? 'selected' : ''}>${m}</option>`
                     ).join('')}
                 </select>
@@ -2359,7 +2003,7 @@ function mostrarModalFormRma(titulo, dados = null) {
                 <button onclick="salvarRmaFirebase()" style="background: #2c3e50; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight:bold; margin-top:10px;">
                     <i class="fa-solid fa-floppy-disk"></i> SALVAR DADOS
                 </button>
-                
+
                 ${dados ? `<button onclick="excluirRmaFirebase()" style="color:#e74c3c; background:none; border:none; cursor:pointer; font-size:11px; margin-top:5px; font-weight: bold;">EXCLUIR REGISTRO</button>` : ''}
             </div>
         </div>
@@ -2402,21 +2046,21 @@ function inicializarSistemaBackupDiscreto() {
     // 1. Verifica se já existe para não duplicar
     if (document.getElementById('btnBackupSistema')) return;
 
-    // 2. CRITÉRIO DE TELA: Só aparece se estiver na página inicial 
+    // 2. CRITÉRIO DE TELA: Só aparece se estiver na página inicial
     // Se o seu sistema muda a URL (ex: index.html), ajuste aqui.
     // Se não mudar, ele aparecerá sempre, mas bem pequeno como pediu.
-    
+
     const btn = document.createElement('button');
     btn.id = 'btnBackupSistema';
     btn.innerHTML = '💾'; // Apenas o ícone para ser bem pequeno
     btn.title = 'Fazer Backup Geral'; // Texto aparece só ao passar o mouse
-    
+
     // Estilo "Mini" e Discreto
     Object.assign(btn.style, {
         position: 'fixed',
         bottom: '10px',
         right: '10px',
-        zIndex: '1000', 
+        zIndex: '1000',
         width: '35px',
         height: '35px',
         padding: '0',
@@ -2441,7 +2085,7 @@ function inicializarSistemaBackupDiscreto() {
         btn.style.borderRadius = '20px';
         btn.innerHTML = 'Backup Banco de Dados';
     };
-    
+
     btn.onmouseout = () => {
         btn.style.opacity = '0.3';
         btn.style.width = '35px'; // Volta a ser um botaozinho
@@ -2451,12 +2095,12 @@ function inicializarSistemaBackupDiscreto() {
 
     btn.onclick = async () => {
         const colecoes = [
-            'agenda_geral', 'contatos', 'controle_rma', 'judicial', 
-            'judicial_advogada', 'judicial_desligados', 'judicial_nao_geral', 
-            'judicial_periodicos', 'judicial_protetivas', 'judicial_respondidos', 
+            'agenda_geral', 'contatos', 'controle_rma', 'judicial',
+            'judicial_advogada', 'judicial_desligados', 'judicial_nao_geral',
+            'judicial_periodicos', 'judicial_protetivas', 'judicial_respondidos',
             'pacientes_paf', 'usuarios'
         ];
-        
+
         if (!confirm("Iniciar backup completo das coleções?")) return;
 
         btn.style.background = '#e67e22';
@@ -2472,7 +2116,7 @@ function inicializarSistemaBackupDiscreto() {
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 const dataSimples = new Date().toLocaleDateString().replace(/\//g, '-');
-                
+
                 a.href = url;
                 a.download = `BACKUP_${nomeCol}_${dataSimples}.json`;
                 a.click();
@@ -2556,7 +2200,7 @@ function configurarMonitorConexao() {
                 painelAlerta.style.background = '#2ecc71'; // Verde de sucesso
                 painelAlerta.style.color = '#ffffff';
                 painelAlerta.innerHTML = '<span>🔄 Conexão restabelecida! Sincronizando dados...</span>';
-                
+
                 // Deixa o aviso verde por 3 segundos e depois esconde suavemente
                 setTimeout(() => {
                     painelAlerta.classList.remove('visivel');
@@ -2586,150 +2230,6 @@ configurarMonitorConexao();
 
 // =================================================================
 // SISTEMA DE LOGIN BLINDADO E REATIVO (FIREBASE AUTHENTICATION)
-// =================================================================
-
-function configurarSistemaLoginCREAS() {
-    // 1. Injeta os estilos CSS da tela de Login na página
-    if (!document.getElementById('estilos-tela-login')) {
-        const estilos = document.createElement('style');
-        estilos.id = 'estilos-tela-login';
-        estilos.innerHTML = `
-            #bloqueio-login-creas {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100vw;
-                height: 100vh;
-                background: #2d3436;
-                z-index: 20000; /* Fica à frente de absolutamente tudo */
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            }
-            .card-login-creas {
-                background: #ffffff;
-                padding: 35px;
-                border-radius: 12px;
-                box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-                width: 100%;
-                max-width: 400px;
-                text-align: center;
-            }
-            .input-login-creas {
-                width: 100%;
-                padding: 12px;
-                margin: 10px 0;
-                border: 1px solid #ddd;
-                border-radius: 6px;
-                font-size: 14px;
-                box-sizing: border-box;
-            }
-            .btn-login-creas {
-                width: 100%;
-                padding: 12px;
-                background: #394046;
-                color: white;
-                border: none;
-                border-radius: 6px;
-                font-size: 15px;
-                font-weight: bold;
-                cursor: pointer;
-                margin-top: 15px;
-                transition: background 0.2s;
-            }
-            .btn-login-creas:hover {
-                background: #4f5357;
-            }
-            .btn-login-creas:disabled {
-                background: #b2bec3;
-                cursor: not-allowed;
-            }
-        `;
-        document.head.appendChild(estilos);
-    }
-
-    // 2. Cria a estrutura HTML da tela de login se ela não existir
-    let telaLogin = document.getElementById('bloqueio-login-creas');
-    if (!telaLogin) {
-        telaLogin = document.createElement('div');
-        telaLogin.id = 'bloqueio-login-creas';
-        // Começa escondida até o Firebase checar o estado do usuário
-        telaLogin.style.display = 'none'; 
-        telaLogin.innerHTML = `
-            <div class="card-login-creas">
-                <h2 style="margin-top:0; color:#2d3436; font-size:22px; margin-bottom:5px;">CREAS REGIONAL ALTO JEQUITINHONHA</h2>
-                <p style="color:#636e72; font-size:14px; margin-bottom:25px;">Gestão Integrada </p>
-                
-                <form id="formulario-login-creas" onsubmit="event.preventDefault();">
-                    <input type="email" id="login-email" class="input-login-creas" placeholder="E-mail funcional" required autocomplete="username">
-                    <input type="password" id="login-senha" class="input-login-creas" placeholder="Senha de acesso" required autocomplete="current-password">
-                    
-                    <div id="erro-login-creas" style="color:#d63031; font-size:13px; font-weight:600; margin-top:10px; display:none;"></div>
-                    
-                    <button type="submit" id="btn-entrar-creas" class="btn-login-creas">Entrar no Sistema</button>
-                </form>
-            </div>
-        `;
-        document.body.appendChild(telaLogin);
-    }
-
-    // Captura os elementos internos da janela de login
-    const form = document.getElementById('formulario-login-creas');
-    const btnEntrar = document.getElementById('btn-entrar-creas');
-    const txtErro = document.getElementById('erro-login-creas');
-
-    // 3. Ação do Botão de Login (Chama a função nativa simplificada do Firebase)
-    form.addEventListener('submit', async () => {
-        const email = document.getElementById('login-email').value;
-        const senha = document.getElementById('login-senha').value;
-
-        txtErro.style.display = 'none';
-        btnEntrar.innerText = 'Autenticando...';
-        btnEntrar.disabled = true;
-
-        try {
-            // Linha única que faz a mágica no Firebase:
-            await firebase.auth().signInWithEmailAndPassword(email, senha);
-            // Se der certo, o observador abaixo (onAuthStateChanged) vai rodar e liberar a tela automaticamente!
-        } catch (erro) {
-            console.error("Erro no login: ", erro.code);
-            txtErro.style.display = 'block';
-            
-            // Tradução simples de erros comuns para a equipe
-            if (erro.code === 'auth/wrong-password' || erro.code === 'auth/user-not-found') {
-                txtErro.innerText = '⚠️ E-mail ou senha incorretos.';
-            } else if (erro.code === 'auth/invalid-email') {
-                txtErro.innerText = '⚠️ Formato de e-mail inválido.';
-            } else {
-                txtErro.innerText = '⚠️ Falha ao conectar. Verifique o acesso.';
-            }
-            
-            btnEntrar.innerText = 'Entrar no Sistema';
-            btnEntrar.disabled = false;
-        }
-    });
-
-    // 4. O OBSERVADOR INTELIGENTE: Verifica em tempo real se o usuário está logado ou não
-    firebase.auth().onAuthStateChanged((usuario) => {
-        if (usuario) {
-            // Usuário está validado! Esconde a tela de login e deixa usar o sistema
-            telaLogin.style.display = 'none';
-            console.log("Usuário autenticado com sucesso: ", usuario.email);
-        } else {
-            // Ninguém logado (ou clicou em sair). Bloqueia a tela mostrando o formulário
-            telaLogin.style.display = 'flex';
-            btnEntrar.innerText = 'Entrar no Sistema';
-            btnEntrar.disabled = false;
-            document.getElementById('login-senha').value = ''; // Limpa o campo de senha por segurança
-        }
-    });
-}
-
-// =================================================================
-// SISTEMA DE LOGIN COM MENSAGEM DE BOAS-VINDAS (FIREBASE AUTH)
-// =================================================================
-
 function configurarSistemaLoginCREAS() {
     // 1. Injeta os estilos CSS da tela de Login na página
     if (!document.getElementById('estilos-tela-login')) {
@@ -2787,7 +2287,7 @@ function configurarSistemaLoginCREAS() {
                 background: #b2bec3;
                 cursor: not-allowed;
             }
-            
+
             /* Estilos para o Toast de Boas-Vindas Geral do Sistema */
             #toast-boas-vindas-container {
                 position: fixed;
@@ -2820,7 +2320,7 @@ function configurarSistemaLoginCREAS() {
     if (!telaLogin) {
         telaLogin = document.createElement('div');
         telaLogin.id = 'bloqueio-login-creas';
-        telaLogin.style.display = 'none'; 
+        telaLogin.style.display = 'none';
         telaLogin.innerHTML = `
 
             <div class="card-login-creas">
@@ -2829,13 +2329,13 @@ function configurarSistemaLoginCREAS() {
             </div>
                 <h2 style="margin-top:0; color:#2d3436; font-size:22px; margin-bottom:5px;">CREAS REGIONAL ALTO JEQUITINHONHA</h2>
                 <p style="color:#636e72; font-size:14px; margin-bottom:25px;">Gestão Integrada </p>
-                
+
                 <form id="formulario-login-creas" onsubmit="event.preventDefault();">
                     <input type="email" id="login-email" class="input-login-creas" placeholder="E-mail funcional" required autocomplete="username">
                     <input type="password" id="login-senha" class="input-login-creas" placeholder="Senha de acesso" required autocomplete="current-password">
-                    
+
                     <div id="erro-login-creas" style="color:#d63031; font-size:13px; font-weight:600; margin-top:10px; display:none;"></div>
-                    
+
                     <button type="submit" id="btn-entrar-creas" class="btn-login-creas">Entrar no Sistema</button>
                 </form>
             </div>
@@ -2869,7 +2369,7 @@ function configurarSistemaLoginCREAS() {
         } catch (erro) {
             console.error("Erro no login: ", erro.code);
             txtErro.style.display = 'block';
-            
+
             if (erro.code === 'auth/wrong-password' || erro.code === 'auth/user-not-found') {
                 txtErro.innerText = '⚠️ E-mail ou senha incorretos.';
             } else if (erro.code === 'auth/invalid-email') {
@@ -2877,7 +2377,7 @@ function configurarSistemaLoginCREAS() {
             } else {
                 txtErro.innerText = '⚠️ Falha ao conectar. Verifique o acesso.';
             }
-            
+
             btnEntrar.innerText = 'Entrar no Sistema';
             btnEntrar.disabled = false;
         }
@@ -2911,7 +2411,7 @@ function configurarSistemaLoginCREAS() {
                         <span style="font-size: 12px; color: #a4b0be;">Seja bem-vindo ao Gestão Integrada.</span>
                     </div>
                 `;
-                
+
                 toastContainer.appendChild(novoToast);
                 jaExibiuBoasVindas = true;
 
@@ -2924,7 +2424,7 @@ function configurarSistemaLoginCREAS() {
             telaLogin.style.display = 'flex';
             btnEntrar.innerText = 'Entrar no Sistema';
             btnEntrar.disabled = false;
-            document.getElementById('login-senha').value = ''; 
+            document.getElementById('login-senha').value = '';
             jaExibiuBoasVindas = false; // Reseta o controle ao deslogar
         }
     });
@@ -3022,7 +2522,7 @@ function fazerLogoutSistema() {
             </div>
             <h3 style="margin: 0 0 8px 0; color: #2d3436; font-size: 18px; font-weight: 700;">Encerrar Sessão?</h3>
             <p style="margin: 0; color: #636e72; font-size: 14px; line-height: 1.5;">Deseja realmente sair do sistema <strong>Gestão Integrada</strong>? Você precisará fazer login novamente para acessar os dados.</p>
-            
+
             <div class="botoes-logout-container">
                 <button id="logout-btn-cancelar" class="btn-logout-acao btn-logout-cancelar">
                     Cancelar
@@ -3056,6 +2556,22 @@ function fazerLogoutSistema() {
 
 
 
-function fecharModalJudicial() { document.getElementById('modalJudicialModerno').style.display = 'none'; }
-function fecharModalNaoJudicial() { document.getElementById('modalNaoJudicialModerno').style.display = 'none'; }
-function fecharModalCadastro() { document.getElementById('modalCadastroJudicial').style.display = 'none'; }
+function fecharModalJudicial() {
+    const modal = document.getElementById('modalJudicialModerno');
+    if (modal) modal.style.display = 'none';
+}
+
+function fecharModalNaoJudicial() {
+    const modal = document.getElementById('modalNaoJudicialModerno');
+    if (modal) modal.style.display = 'none';
+}
+
+function fecharModalCadastro() {
+    const modal = document.getElementById('modalCadastroJudicial');
+    if (modal) modal.style.display = 'none';
+    document.body.style.overflow = 'auto';
+}
+
+window.fecharModalJudicial = fecharModalJudicial;
+window.fecharModalNaoJudicial = fecharModalNaoJudicial;
+window.fecharModalCadastro = fecharModalCadastro;
