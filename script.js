@@ -1,13 +1,8 @@
 // --- SERVIÇOS FIREBASE/FIRESTORE ---
 const firebaseServices = window.firebaseServices;
+const firestoreService = firebaseServices.firestore;
 const db = firebaseServices.db;
 const auth = firebaseServices.auth;
-const agendaService = window.agendaService;
-const rmaService = window.rmaService;
-const judicialService = window.judicialService;
-const backupService = window.backupService;
-const rmaUtils = window.rmaUtils;
-const rmaView = window.rmaView;
 
 
 
@@ -30,7 +25,7 @@ window.prepararEdicao = async (id, col) => {
     }
 
     try {
-        const doc = await judicialService.buscarProcessoPorId(col, id);
+        const doc = await firestoreService.getDocument(col, id);
         if (doc.exists) {
             const d = doc.data();
 
@@ -352,7 +347,7 @@ function carregarDadosJudiciaisNaTabelaReal(tipo) {
     const mapaCidades = { "sgrp": "São Gonçalo do Rio Preto", "couto": "Couto de Magalhães", "datas": "Datas", "gouveia": "Gouveia", "monjolos": "Monjolos", "felicio": "Felício dos Santos" };
     const filtroNorm = (mapaCidades[filtroCidRaw] || filtroCidRaw).normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
 
-    judicialService.escutarProcessos(colecaoAtiva, (snapshot) => {
+    firestoreService.listenCollection(colecaoAtiva, (snapshot) => {
         let todosDados = [];
         snapshot.forEach(doc => {
             const d = doc.data();
@@ -568,7 +563,7 @@ window.solicitarExclusaoModal = (id, colecao, nomeUsuario, tipoAtual) => {
             document.getElementById('btnConfirmarExclusao').innerText = "Excluindo...";
             document.getElementById('btnConfirmarExclusao').disabled = true;
 
-            await judicialService.excluirProcesso(colecao, id);
+            await firestoreService.deleteDocument(colecao, id);
 
             dialog.close();
             dialog.remove();
@@ -788,28 +783,32 @@ window.mudarAnoAgenda = (novoAno) => {
 };
 
 function escutarAgendaRealTime() {
-    agendaService.escutarEventos((snapshot) => {
-        todosDadosAgenda = [];
-        snapshot.forEach(doc => {
-            const d = doc.data();
-            if (String(d.ano) === ANO_VIGENTE_AGENDA) {
-                todosDadosAgenda.push({ id: doc.id, ...d });
-            }
-        });
+    firestoreService.listenQuery(
+        COLECOES.AGENDA_GERAL || "agenda_geral",
+        (ref) => ref.orderBy("data_criacao", "desc"),
+        (snapshot) => {
+            todosDadosAgenda = [];
+            snapshot.forEach(doc => {
+                const d = doc.data();
+                if (String(d.ano) === ANO_VIGENTE_AGENDA) {
+                    todosDadosAgenda.push({ id: doc.id, ...d });
+                }
+            });
 
-        todosDadosAgenda.sort((a, b) => {
-            const conv = (s) => {
-                if(!s || !s.includes('/')) return 0;
-                const [d, m, y] = s.split('/');
-                return new Date(y, m - 1, d).getTime();
-            };
-            return conv(b.data) - conv(a.data);
-        });
+            todosDadosAgenda.sort((a, b) => {
+                const conv = (s) => {
+                    if(!s || !s.includes('/')) return 0;
+                    const [d, m, y] = s.split('/');
+                    return new Date(y, m - 1, d).getTime();
+                };
+                return conv(b.data) - conv(a.data);
+            });
 
-        const modalAberto = document.getElementById('modalJudicialModerno').style.display === 'flex';
-        if(modalAberto) { verificarCompromissosHoje(); }
-        carregarDadosAgendaReal();
-    });
+            const modalAberto = document.getElementById('modalJudicialModerno').style.display === 'flex';
+            if(modalAberto) { verificarCompromissosHoje(); }
+            carregarDadosAgendaReal();
+        }
+    );
 }
 
 function carregarDadosAgendaReal() {
@@ -1141,15 +1140,15 @@ async function salvarAgendaFirebase() {
         equipe: document.getElementById('f_ag_equipe').value,
         observacoes: document.getElementById('f_ag_obs').value,
         ano: ANO_VIGENTE_AGENDA,
-        data_criacao: agendaService.criarTimestamp()
+        data_criacao: firebaseServices.timestampNow()
     };
 
     try {
         if (idAgendaEdicao) {
-            await agendaService.salvarEvento(idAgendaEdicao, dados);
+            await db.collection(COLECOES.AGENDA_GERAL || "agenda_geral").doc(idAgendaEdicao).update(dados);
             mostrarNotificacaoSucesso("Agenda updated com sucesso!");
         } else {
-            await agendaService.salvarEvento(null, dados);
+            await db.collection(COLECOES.AGENDA_GERAL || "agenda_geral").add(dados);
             mostrarNotificacaoSucesso("Novo compromisso cadastrado!");
         }
         fecharModalCadastro();
@@ -1164,7 +1163,7 @@ async function excluirAgendaFirebase() {
         "Deseja mesmo excluir este compromisso permanentemente do sistema?",
         async () => {
             try {
-                await agendaService.excluirEvento(idAgendaEdicao);
+                await db.collection(COLECOES.AGENDA_GERAL || "agenda_geral").doc(idAgendaEdicao).delete();
                 mostrarNotificacaoSucesso("Compromisso removido com sucesso!");
                 fecharModalCadastro();
             } catch (e) {
@@ -1178,7 +1177,7 @@ let idAgendaEdicao = null;
 function abrirNovoCadastroAgenda() { idAgendaEdicao = null; mostrarModalFormAgenda("NOVO EVENTO"); }
 async function prepararEdicaoAgenda(id) {
     idAgendaEdicao = id;
-    const doc = await agendaService.buscarEventoPorId(id);
+    const doc = await db.collection(COLECOES.AGENDA_GERAL || "agenda_geral").doc(id).get();
     if (doc.exists) mostrarModalFormAgenda("EDITAR EVENTO", doc.data());
 }
 
@@ -1285,18 +1284,17 @@ window.salvarNoFirebase = async () => {
             colecaoDestinoFinal = statusFinalDoProcesso;
         }
 
-        const resultadoSalvamento = await judicialService.salvarProcesso({
-            id: idProcessoEmEdicao,
-            colecaoOrigem,
-            colecaoDestino: colecaoDestinoFinal,
-            dados
-        });
-
-        if (resultadoSalvamento.acao === 'movido') {
-            mostrarToast("Processo atualizado e movido de aba com sucesso!");
-        } else if (resultadoSalvamento.acao === 'atualizado') {
-            mostrarToast("Processo atualizado com sucesso!");
+        if (idProcessoEmEdicao) {
+            if (colecaoOrigem !== colecaoDestinoFinal) {
+                await firestoreService.deleteDocument(colecaoOrigem, idProcessoEmEdicao);
+                await firestoreService.addDocument(colecaoDestinoFinal, dados);
+                mostrarToast("Processo atualizado e movido de aba com sucesso!");
+            } else {
+                await firestoreService.updateDocument(colecaoOrigem, idProcessoEmEdicao, dados);
+                mostrarToast("Processo atualizado com sucesso!");
+            }
         } else {
+            await firestoreService.addDocument(colecaoDestinoFinal, dados);
             mostrarToast("Novo processo cadastrado com sucesso!");
         }
 
@@ -1679,36 +1677,44 @@ function aplicarEstiloPulsoRma(ativar) {
 window.verificarPendenciasRma = function() {
     const agora = new Date();
     const diaAtual = agora.getDate();
-    const referenciaAnterior = rmaUtils.obterReferenciaMesAnterior(agora);
-    const mesAnteriorNome = referenciaAnterior.mes;
-    const anoReferenciaStr = referenciaAnterior.ano;
+    const mesesNomes = ["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
 
-    rmaService.buscarPendencias(anoReferenciaStr, mesAnteriorNome)
-        .then((snapshot) => {
-            let cidadesComRegistro = [];
-            snapshot.forEach(doc => {
-                const d = doc.data();
-                if (rmaUtils.temDataEnvioValida(d.data_envio)) {
-                    cidadesComRegistro.push(d.municipio);
-                }
-            });
+    let indexMesAnterior = agora.getMonth() - 1;
+    let anoReferencia = agora.getFullYear();
+    if (indexMesAnterior < 0) { indexMesAnterior = 11; anoReferencia--; }
 
-            let pendentes = rmaUtils.listarCidadesPendentes(MUNICIPIOS_LISTA, cidadesComRegistro);
-            const temPendenciaGlobal = pendentes.length > 0 && diaAtual > 7;
+    const mesAnteriorNome = mesesNomes[indexMesAnterior];
+    const anoReferenciaStr = anoReferencia.toString();
 
-            // Aplica pulso tanto no card da Home quanto no botão de menu
-            aplicarEstiloPulsoRma(temPendenciaGlobal);
+    db.collection(COLECOES.CONTROLE_RMA || "controle_rma")
+      .where("ano", "==", anoReferenciaStr)
+      .where("mes", "==", mesAnteriorNome)
+      .get()
+      .then((snapshot) => {
+          let cidadesComRegistro = [];
+          snapshot.forEach(doc => {
+              const d = doc.data();
+              if (d.data_envio && d.data_envio.trim() !== "" && d.data_envio !== "00/00/00" && d.data_envio !== "00/00/0000") {
+                  cidadesComRegistro.push(d.municipio);
+              }
+          });
 
-            const faixa = document.getElementById('alertaPendenciaRma');
-            if (faixa) {
-                if (pendentes.includes(CIDADE_ATUAL_RMA) && diaAtual > 7) {
-                    faixa.style.display = 'flex';
-                    faixa.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ATENÇÃO: Hoje é dia ${diaAtual} e o RMA de <b>${mesAnteriorNome}</b> está pendente para: <b>${CIDADE_ATUAL_RMA}</b>`;
-                } else {
-                    faixa.style.display = 'none';
-                }
-            }
-        });
+          let pendentes = MUNICIPIOS_LISTA.filter(c => !cidadesComRegistro.includes(c));
+          const temPendenciaGlobal = pendentes.length > 0 && diaAtual > 7;
+
+          // Aplica pulso tanto no card da Home quanto no botão de menu
+          aplicarEstiloPulsoRma(temPendenciaGlobal);
+
+          const faixa = document.getElementById('alertaPendenciaRma');
+          if (faixa) {
+              if (pendentes.includes(CIDADE_ATUAL_RMA) && diaAtual > 7) {
+                  faixa.style.display = 'flex';
+                  faixa.innerHTML = `<i class="fa-solid fa-triangle-exclamation"></i> ATENÇÃO: Hoje é dia ${diaAtual} e o RMA de <b>${mesAnteriorNome}</b> está pendente para: <b>${CIDADE_ATUAL_RMA}</b>`;
+              } else {
+                  faixa.style.display = 'none';
+              }
+          }
+      });
 };
 
 // ==========================================
@@ -1726,27 +1732,74 @@ window.abrirTelaRma = function() {
     }
 
     modalBase.style.display = 'flex';
-    modalBase.innerHTML = rmaView.renderTelaPrincipal({
-        optionsAno,
-        municipios: MUNICIPIOS_LISTA,
-        cidadeAtual: CIDADE_ATUAL_RMA
-    });
+    modalBase.innerHTML = `
+        <div style="width: 98%; max-width: 1500px; background: white; padding: 25px; border-radius: 12px; position: relative; height: 90vh; display: flex; flex-direction: column; box-shadow: 0 10px 25px rgba(0,0,0,0.5);">
+
+            <div class="btn-fechar-rma-fino" onclick="fecharRmaPrincipal()"
+                 style="position: absolute; top: 12px; right: 12px; cursor: pointer; font-size: 20px; color: #e74c3c; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; z-index: 100; transition: all 0.2s;">
+                 <i class="fa-solid fa-xmark"></i>
+            </div>
+
+            <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 15px;">
+                <div style="display: flex; align-items: center; gap: 15px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <i class="fa-solid fa-chart-simple" style="color: #3498db; font-size: 24px;"></i>
+                        <h2 style="margin: 0; color: #2c3e50; font-size: 22px; letter-spacing: -0.5px;">RMA</h2>
+                        <select id="selectAnoRma" onchange="mudarAnoRma(this.value)" style="padding: 2px 5px; border-radius: 5px; border: 1px solid #ccc; font-weight: bold; font-size: 14px; cursor:pointer;">${optionsAno}</select>
+                    </div>
+
+                    <div style="display: flex; background: #f1f2f6; padding: 4px; border-radius: 8px; gap: 2px;">
+                        ${MUNICIPIOS_LISTA.map(cidade => `
+                            <button onclick="filtrarCidadeRma('${cidade}')"
+                                style="padding: 6px 12px; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 11px; transition: all 0.2s;
+                                ${CIDADE_ATUAL_RMA === cidade ? 'background: #2c3e50; color: white;' : 'background: transparent; color: #7f8c8d;'}">
+                                ${cidade}
+                            </button>
+                        `).join('')}
+                    </div>
+                </div>
+
+                <div style="display: flex; align-items: center; gap: 15px; margin-right: 35px;">
+                    <button onclick="abrirNovoCadastroRma()" style="background: #2c3e50; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; display: flex; align-items: center; gap: 8px; font-size: 13px;">
+                        <i class="fa-solid fa-plus"></i> NOVO RMA
+                    </button>
+                </div>
+            </div>
+
+            <div id="alertaPendenciaRma" class="faixa-alerta-rma"></div>
+
+            <div style="overflow-y: auto; flex: 1; border: 1px solid #eee; border-radius: 8px;">
+                <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+                    <thead style="position: sticky; top: 0; background: #2c3e50; color: white; z-index: 10;">
+                        <tr>
+                            <th style="padding: 15px; text-align: left;">MUNICÍPIO</th>
+                            <th style="padding: 15px; text-align: center;">MÊS REF</th>
+                            <th style="padding: 15px; text-align: center;">DATA ENVIO</th>
+                            <th style="padding: 15px; text-align: left;">OBSERVAÇÕES</th>
+                            <th style="padding: 15px; text-align: center;">DRIVE</th>
+                            <th style="padding: 15px; text-align: center;">EDITAR</th>
+                        </tr>
+                    </thead>
+                    <tbody id="corpoTabelaRmaExclusivo"></tbody>
+                </table>
+            </div>
+        </div>
+    `;
     verificarPendenciasRma();
     escutarRmaRealTime();
 };
 
 function escutarRmaRealTime() {
-    rmaService.escutarRegistrosPorCidadeEAno(
-        ANO_VIGENTE_RMA,
-        CIDADE_ATUAL_RMA,
-        (snapshot) => {
-            todosDadosRma = [];
-            snapshot.forEach(doc => todosDadosRma.push({ id: doc.id, ...doc.data() }));
-            const mesesOrdem = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
-            todosDadosRma.sort((a, b) => mesesOrdem.indexOf(a.mes) - mesesOrdem.indexOf(b.mes));
-            renderizarTabelaRma();
-        }
-    );
+    db.collection(COLECOES.CONTROLE_RMA || "controle_rma")
+      .where("ano", "==", ANO_VIGENTE_RMA)
+      .where("municipio", "==", CIDADE_ATUAL_RMA)
+      .onSnapshot((snapshot) => {
+        todosDadosRma = [];
+        snapshot.forEach(doc => todosDadosRma.push({ id: doc.id, ...doc.data() }));
+        const mesesOrdem = ["JANEIRO", "FEVEREIRO", "MARÇO", "ABRIL", "MAIO", "JUNHO", "JULHO", "AGOSTO", "SETEMBRO", "OUTUBRO", "NOVEMBRO", "DEZEMBRO"];
+        todosDadosRma.sort((a, b) => mesesOrdem.indexOf(a.mes) - mesesOrdem.indexOf(b.mes));
+        renderizarTabelaRma();
+    });
 }
 
 function renderizarTabelaRma() {
@@ -1759,7 +1812,29 @@ function renderizarTabelaRma() {
         return;
     }
 
-    corpo.innerHTML = todosDadosRma.map(d => rmaView.renderLinhaTabela(d)).join('');
+    todosDadosRma.forEach(d => {
+        const dataDisplay = (d.data_envio === "00/00/00" || d.data_envio === "00/00/0000")
+            ? `<span style="color: #e74c3c; font-weight: bold;">${d.data_envio}</span>`
+            : (d.data_envio || '-');
+
+        const linkDoc = d.link_arquivo
+            ? `<a href="${d.link_arquivo}" target="_blank" style="color: #0e7ceb; font-size: 18px;"><i class="fa-brands fa-google-drive"></i></a>`
+            : '-';
+
+        corpo.innerHTML += `
+            <tr style="border-bottom: 1px solid #eee; transition: background 0.2s;" onmouseover="this.style.background='#f9f9f9'" onmouseout="this.style.background='transparent'">
+                <td style="padding: 12px; font-weight: bold; color: #2c3e50;">${d.municipio}</td>
+                <td style="padding: 12px; text-align: center; font-weight: bold;">${d.mes}</td>
+                <td style="padding: 12px; text-align: center;">${dataDisplay}</td>
+                <td style="padding: 12px; font-size: 13px; color: #7f8c8d;">${d.observacoes || ''}</td>
+                <td style="padding: 12px; text-align: center;">${linkDoc}</td>
+                <td style="padding: 12px; text-align: center;">
+                    <button onclick="prepararEdicaoRma('${d.id}')" style="background: #f1f2f6; border: none; padding: 6px 10px; border-radius: 6px; cursor:pointer; color: #2c3e50;">
+                        <i class="fa-solid fa-pen-to-square"></i>
+                    </button>
+                </td>
+            </tr>`;
+    });
 }
 
 window.filtrarCidadeRma = function(cidade) { CIDADE_ATUAL_RMA = cidade; abrirTelaRma(); };
@@ -1771,7 +1846,7 @@ window.mudarAnoRma = (ano) => { ANO_VIGENTE_RMA = ano; escutarRmaRealTime(); };
 window.abrirNovoCadastroRma = () => { idRmaEdicao = null; mostrarModalFormRma(`NOVO RMA - ${CIDADE_ATUAL_RMA}`); };
 window.prepararEdicaoRma = async (id) => {
     idRmaEdicao = id;
-    const doc = await rmaService.buscarRegistroPorId(id);
+    const doc = await db.collection(COLECOES.CONTROLE_RMA || "controle_rma").doc(id).get();
     if (doc.exists) mostrarModalFormRma("EDITAR REGISTRO", doc.data());
 };
 
@@ -1780,11 +1855,38 @@ function mostrarModalFormRma(titulo, dados = null) {
     if(!modalForm) return;
 
     modalForm.style.display = 'flex';
-    modalForm.innerHTML = rmaView.renderFormulario({
-        titulo,
-        dados,
-        cidadeAtual: CIDADE_ATUAL_RMA
-    });
+    modalForm.innerHTML = `
+        <div style="background: white; width: 400px; border-radius: 12px; padding: 25px; position: relative; box-shadow: 0 20px 50px rgba(0,0,0,0.5);">
+            <span onclick="fecharRmaFormulario()" class="btn-fechar-rma-fino" style="position:absolute; right:20px; top:15px;"><i class="fa-solid fa-xmark"></i></span>
+            <h3 style="text-align:center; margin-top:0; color: #2c3e50; border-bottom: 2px solid #f1f2f6; padding-bottom: 10px;">${titulo}</h3>
+
+            <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;">
+                <input type="hidden" id="f_rma_municipio" value="${dados?.municipio || CIDADE_ATUAL_RMA}">
+
+                <label style="font-size:11px; font-weight:bold; color: #7f8c8d;">MÊS DE REFERÊNCIA</label>
+                <select id="f_rma_mes" style="padding: 10px; border-radius: 8px; border:1px solid #ddd; outline: none;">
+                    ${["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"].map(m =>
+                        `<option value="${m}" ${dados?.mes === m ? 'selected' : ''}>${m}</option>`
+                    ).join('')}
+                </select>
+
+                <label style="font-size:11px; font-weight:bold; color: #7f8c8d;">DATA DE ENVIO</label>
+                <input type="text" id="f_rma_data" placeholder="00/00/0000" value="${dados?.data_envio || ''}" style="padding: 10px; border-radius: 8px; border:1px solid #ddd; outline: none;">
+
+                <label style="font-size:11px; font-weight:bold; color: #7f8c8d;">LINK DRIVE</label>
+                <input type="text" id="f_rma_link" placeholder="Cole o link" value="${dados?.link_arquivo || ''}" style="padding: 10px; border-radius: 8px; border:1px solid #ddd; outline: none;">
+
+                <label style="font-size:11px; font-weight:bold; color: #7f8c8d;">OBSERVAÇÕES</label>
+                <textarea id="f_rma_obs" style="padding: 10px; height: 60px; border-radius: 8px; border:1px solid #ddd; resize:none; outline: none;">${dados?.observacoes || ''}</textarea>
+
+                <button onclick="salvarRmaFirebase()" style="background: #2c3e50; color: white; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight:bold; margin-top:10px;">
+                    <i class="fa-solid fa-floppy-disk"></i> SALVAR DADOS
+                </button>
+
+                ${dados ? `<button onclick="excluirRmaFirebase()" style="color:#e74c3c; background:none; border:none; cursor:pointer; font-size:11px; margin-top:5px; font-weight: bold;">EXCLUIR REGISTRO</button>` : ''}
+            </div>
+        </div>
+    `;
 }
 
 async function salvarRmaFirebase() {
@@ -1797,7 +1899,8 @@ async function salvarRmaFirebase() {
         ano: ANO_VIGENTE_RMA
     };
     try {
-        await rmaService.salvarRegistro(idRmaEdicao, dados);
+        if (idRmaEdicao) await db.collection(COLECOES.CONTROLE_RMA || "controle_rma").doc(idRmaEdicao).update(dados);
+        else await db.collection(COLECOES.CONTROLE_RMA || "controle_rma").add(dados);
         fecharRmaFormulario();
         verificarPendenciasRma();
     } catch (e) { alert("Erro ao salvar."); }
@@ -1805,7 +1908,7 @@ async function salvarRmaFirebase() {
 
 async function excluirRmaFirebase() {
     if (confirm("Excluir este registro?")) {
-        await rmaService.excluirRegistro(idRmaEdicao);
+        await db.collection(COLECOES.CONTROLE_RMA || "controle_rma").doc(idRmaEdicao).delete();
         fecharRmaFormulario();
         verificarPendenciasRma();
     }
@@ -1870,7 +1973,20 @@ function inicializarSistemaBackupDiscreto() {
     };
 
     btn.onclick = async () => {
-        const colecoes = backupService.listarColecoesBackup();
+        const colecoes = [
+            COLECOES.AGENDA_GERAL || 'agenda_geral',
+            COLECOES.CONTATOS || 'contatos',
+            COLECOES.CONTROLE_RMA || 'controle_rma',
+            COLECOES.JUDICIAL || 'judicial',
+            COLECOES.JUDICIAL_ADVOGADA || 'judicial_advogada',
+            COLECOES.JUDICIAL_DESLIGADOS || 'judicial_desligados',
+            COLECOES.JUDICIAL_NAO_GERAL || 'judicial_nao_geral',
+            COLECOES.JUDICIAL_PERIODICOS || 'judicial_periodicos',
+            COLECOES.JUDICIAL_PROTETIVAS || 'judicial_protetivas',
+            COLECOES.JUDICIAL_RESPONDIDOS || 'judicial_respondidos',
+            'pacientes_paf',
+            'usuarios'
+        ];
 
         if (!confirm("Iniciar backup completo das coleções?")) return;
 
@@ -1879,8 +1995,8 @@ function inicializarSistemaBackupDiscreto() {
 
         try {
             for (const nomeCol of colecoes) {
-                const dados = await backupService.buscarDadosColecao(nomeCol);
-                if (dados.length === 0) continue;
+                const snapshot = await firestoreService.getCollection(nomeCol);
+                if (snapshot.empty) continue;
 
                 const blob = new Blob([JSON.stringify(dados, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
